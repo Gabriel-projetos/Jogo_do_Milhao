@@ -1,30 +1,30 @@
-# Nome do executavel fina
+# Nome do executável final
 EXEC = jogo_do_milhao
 
 # Compilador usado
-cc = gcc
+CC = gcc
 
-# Diretorios
-src_dir = Sourcers
-inc_dir = Headers
+# Diretórios
+SRC_DIR = Sourcers
+INC_DIR = Headers
 
-# Arquivos fonte
-srcs = main.c $(src_dir)/pergunta.c $(src_dir)/funções_padrão.c
+# Arquivos fonte com nome com acento
+SRCS = main.c $(SRC_DIR)/pergunta.c $(SRC_DIR)/funções_padrão.c
 
-#Flags
-cflags = -I$(inc_dir) -Wall
+# Flags do compilador (inclui o diretório de headers)
+CFLAGS = -I$(INC_DIR) -Wall -Wextra
 
-# Regra padrão
+# Regra padrão para compilar tudo
 all: $(EXEC)
 
-# Compila tudo
-$(EXEC): $(srcs)
-	$(cc) $(srcs) $(cflags) -o $(EXEC)
+# Como compilar o executável
+$(EXEC): $(SRCS)
+	$(CC) $(SRCS) $(CFLAGS) -o $(EXEC)
 
-# Limpa os arquivos gerados
+# Limpa os arquivos executáveis (Windows)
 clean:
-	del /f /q $(EXEC).exe 2>nul
+	del /f /q $(EXEC).exe 2>nul || rm -f $(EXEC)
 
-# Executa
+# Executa o programa
 run: $(EXEC)
 	./$(EXEC)
