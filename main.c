@@ -40,7 +40,6 @@ int main() {
 
     //Menu Inicial
     menu_opcao = menuInicial();
-
     switch(menu_opcao){
         case INSERIR:
             recebePergunta(&perguntas, &total_perguntas);
@@ -57,6 +56,7 @@ int main() {
             salvaPerguntaNoCSV("questoes.csv", perguntas[total_perguntas]);
             break;
         case EXCLUIR:
+
             excluirPergunta(&perguntas, &total_perguntas);
             break;
         case JOGAR:
