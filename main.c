@@ -2,10 +2,12 @@
 #include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "headers/pergunta.h"
 #include "headers/leitor_csv.h"
 #include "headers/funcoes_padrao.h"
 #include "headers/menu_inicial.h"
+#include "headers/jogo.h"
 
 int menuInicial(){
     Opcao menu_opcao;
@@ -56,28 +58,44 @@ int main() {
             salvaPerguntaNoCSV("questoes.csv", perguntas[total_perguntas]);
             break;
         case EXCLUIR:
-
             excluirPergunta(&perguntas, &total_perguntas);
+            salvaTodasPerguntasNoCSV("questoes.csv", perguntas, total_perguntas);
             break;
         case JOGAR:
             printf("Iniciando o jogo...\n");
-            // Não sei o que fazer aqui e to com muita preguiça de pensar agora
+                for (int nivel = 1; nivel <= 5; nivel++) {
+                    Pergunta *p = sorteiaPorNivel(&perguntas, total_perguntas, nivel);
+                    if (p != NULL) {
+                        mostraPergunta(p);
+                        printf("Digite a letra da alternativa correta: ");
+                        char resposta;
+                        scanf(" %c", &resposta);
+                        if (toupper(resposta) == toupper(p->correta)) {
+                            printf("\033[0;32mCorreto!\033[0m\n");
+                        } else {
+                            printf("\033[0;31mErrado! A resposta correta era %c.\033[0m\n", p->correta);
+                            break;
+                        }
+                    } else {
+                        printf("Sem pergunta disponível para o nível %d.\n", nivel);
+                    }
+                }
+                break;
         case SAIR:
-            printf("Saindo do programa...\n");
-            return 0;
-        default:
-            printf("Opção invalida!\n");
-            menu_opcao = menuInicial();
-    }//switch
-        
-        // Liberar memória
-        for (int i = 0; i < total_perguntas; i++) {
-        free(perguntas[i].enunciado);
-        for (int j = 0; j < 4; j++) {
-            free(perguntas[i].alternativas[j].texto);
+                printf("Saindo do programa...\n");
+                // Liberar memória
+                for (int i = 0; i < total_perguntas; i++) {
+                    free(perguntas[i].enunciado);
+                    for (int j = 0; j < 4; j++) {
+                        free(perguntas[i].alternativas[j].texto);
+                    }
+                }
+                free(perguntas);
+                return 0;
+            default:
+                printf("Opção inválida!\n");
+                break;
         }
-    }
-    free(perguntas);
 
-    return 0;
-}
+        return 0;
+    }

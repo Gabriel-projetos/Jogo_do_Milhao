@@ -163,6 +163,7 @@ void excluirPergunta(Pergunta **perguntas, int *total) {
     } else {
         printf("Erro ao realocar vetor de perguntas!\n");
     }
+}
 
 //Salva a pergunta no CSV para não perder os dados
 void salvaPerguntaNoCSV(const char *questoes, Pergunta *pergunta){
@@ -171,7 +172,7 @@ void salvaPerguntaNoCSV(const char *questoes, Pergunta *pergunta){
         printf("Erro ao abrir o arquivo %s\n", questoes);
     }//if
 
-    fprintg(file, "%s;", pergunta->enunciado);
+    fprintf(file, "%s;", pergunta->enunciado);
     for(int i = 0; i < 4; i++){
         fprintf(file, "%s;", pergunta->alternativas[i].texto);
     }//for

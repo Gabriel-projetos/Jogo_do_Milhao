@@ -10,6 +10,7 @@ INC_DIR = Headers
 
 # Arquivos fonte com nome com acento
 SRCS = main.c $(SRC_DIR)/pergunta.c $(SRC_DIR)/funcoes_padrao.c $(SRC_DIR)/leitor_csv.c
+SRCS = main.c sources/pergunta.c sources/funcoes_padrao.c sources/leitor_csv.c sources/jogo.c
 
 # Flags do compilador (inclui o diretório de headers)
 CFLAGS = -I$(INC_DIR) -Wall -Wextra
