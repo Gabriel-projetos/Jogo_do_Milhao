@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "../headers/pergunta.h"
 #include "../headers/funcoes_padrao.h"
 
@@ -163,3 +164,4 @@ void excluirPergunta(Pergunta **perguntas, int *total) {
         printf("Erro ao realocar vetor de perguntas!\n");
     }
 
+}
