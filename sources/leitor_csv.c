@@ -18,6 +18,7 @@ char* trim(char *str) {
     end = str + strlen(str) - 1;
     while (end > str && isspace((unsigned char)*end)) end--;
 
+    // Define fim da string
     *(end + 1) = '\0';
     return str;
 }
@@ -31,12 +32,9 @@ Pergunta* carregaPerguntasDeCSV(const char *nome_arquivo, int *total) {
         return NULL;
     }
 
-    Pergunta *perguntas = NULL;
-    char linha[1024];
     int capacidade = 10;
     int count = 0;
-
-    perguntas = malloc(capacidade * sizeof(Pergunta));
+    Pergunta *perguntas = malloc(capacidade * sizeof(Pergunta));
     if (!perguntas) {
         printf("Erro ao alocar memória\n");
         fclose(file);
@@ -44,34 +42,54 @@ Pergunta* carregaPerguntasDeCSV(const char *nome_arquivo, int *total) {
         return NULL;
     }
 
+    char linha[1024];
+
     // Ignora a primeira linha (cabeçalho)
     fgets(linha, sizeof(linha), file);
 
     while (fgets(linha, sizeof(linha), file)) {
         if (count >= capacidade) {
             capacidade *= 2;
-            Pergunta *tmp = realloc(perguntas, capacidade * sizeof(Pergunta));
-            if (!tmp) {
+            Pergunta *temp = realloc(perguntas, capacidade * sizeof(Pergunta));
+            if (!temp) {
                 printf("Erro ao realocar memória\n");
                 fclose(file);
+                // Limpa strings já alocadas das perguntas carregadas
+                for (int i = 0; i < count; i++) {
+                    free(perguntas[i].enunciado);
+                    for (int j = 0; j < 4; j++) free(perguntas[i].alternativas[j].texto);
+                }
                 free(perguntas);
-                *total = count;
+                *total = 0;
                 return NULL;
             }
-            perguntas = tmp;
+            perguntas = temp;
         }
-
+        
+        // Tokeniza linha pelo separador ';'
         char *token = strtok(linha, ";");
         if (!token) continue;
 
         // Enunciado
         char *enunciado = strdup(trim(token));
+        if (!enunciado){
+            printf("Erro ao alocar enunciado\n");
+            continue;
+        }
+        
 
         // Alternativas A, B, C, D
         char *alternativas[4];
         for (int i = 0; i < 4; i++) {
             token = strtok(NULL, ";");
             alternativas[i] = token ? strdup(trim(token)) : strdup("");
+             if (!alternativas[i]) {
+                printf("Erro ao alocar alternativa\n");
+                // Liberar strings alocadas até aqui...
+                for (int k = 0; k < i; k++) free(alternativas[k]);
+                free(enunciado);
+                continue;
+            }
         }
 
         // Letra da alternativa correta
@@ -80,7 +98,8 @@ Pergunta* carregaPerguntasDeCSV(const char *nome_arquivo, int *total) {
 
         // Nível de dificuldade
         token = strtok(NULL, ";");
-        int nivel = token ? atoi(token) : 1;
+        int nivel = (token) ? atoi(token) : 1;
+        if(nivel < 1 || nivel > 5) nivel = 1;
 
         // Preenche a struct
         Pergunta *p = &perguntas[count];

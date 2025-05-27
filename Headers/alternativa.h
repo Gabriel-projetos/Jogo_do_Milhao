@@ -2,8 +2,8 @@
 #define ALTERNATIVA_H
 
 typedef struct{
-     char letra;
-     char *texto;
+     char letra; // 'A', 'B', 'C', 'D'
+     char *texto; // texto da alternativa
 }Alternativa;
 
 #endif

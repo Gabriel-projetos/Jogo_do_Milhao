@@ -5,53 +5,52 @@
 #include "../headers/funcoes_padrao.h"
 
 // Recebe nova pergunta, realocando o vetor de Pergunta*
-Pergunta** recebePergunta(Pergunta **perguntas, int *total) {
-    Pergunta *nova = malloc(sizeof(Pergunta));
+void recebePergunta(Pergunta **perguntas, int *total) {
+    Pergunta *nova = realloc(*perguntas, (*total + 1) * sizeof(Pergunta));
     if (!nova) {
         printf("Erro ao alocar memória para nova pergunta!\n");
-        return perguntas;
+        return ;
     }
+
+    *perguntas = nova;
+
+    Pergunta *p = &((*perguntas)[*total]);
+
 
     // Recebe o enunciado
     printf("Digite o enunciado da questão:\n");
     limpaBuffer();
-    nova->enunciado = leTextoDinamico();
-    converteMaiscula(nova->enunciado);
+    p->enunciado = leTextoDinamico();
+    converteMaiscula(p->enunciado);
 
     // Recebe alternativas
     char letras[] = {'A', 'B', 'C', 'D'};
     for (int i = 0; i < 4; i++) {
-        nova->alternativas[i].letra = letras[i];
+        p->alternativas[i].letra = letras[i];
         printf("Digite a alternativa %c:\n", letras[i]);
-        nova->alternativas[i].texto = leTextoDinamico();
-        converteMaiscula(nova->alternativas[i].texto);
+        p->alternativas[i].texto = leTextoDinamico();
+        converteMaiscula(p->alternativas[i].texto);
     }
 
     // Recebe correta
     printf("Digite qual é a alternativa correta (A/B/C/D):\n");
-    scanf(" %c", &nova->correta);
+    scanf(" %c", &p->correta);
+    p->correta = toupper(p->correta);
 
     // Recebe dificuldade
     printf("Escolha a dificuldade da questão:\n");
     printf("1 - Muito Fácil\n2 - Fácil\n3 - Médio\n4 - Difícil\n5 - Muito Difícil\n");
     int nivel;
     scanf("%d", &nivel);
-    nova->nivel = nivel;
+    // Realoca o vetor de perguntas para guardar o novo ponteiro
+    if (nivel < 1 || nivel > 5) nivel = 1;
+    p->nivel = (Dificuldade) nivel;
     limpaBuffer();
 
-    // Realoca o vetor de perguntas para guardar o novo ponteiro
-    perguntas = realloc(perguntas, (*total + 1) * sizeof(Pergunta*));
-    if (!perguntas) {
-        printf("Erro ao realocar vetor de perguntas!\n");
-        free(nova);
-        return NULL;
-    }
-    perguntas[*total] = nova;
     (*total)++;
-
     printf("Pergunta adicionada com sucesso!\n");
-    return perguntas;
 }
+
 
 // Mostra uma pergunta completa
 void mostraPergunta(Pergunta *pergunta) {
@@ -62,25 +61,30 @@ void mostraPergunta(Pergunta *pergunta) {
 }
 
 // Lista perguntas por nível
-void listaPerguntas(Pergunta **perguntas, int total) {
+void listaPerguntas(Pergunta *perguntas, int total) {
     for (int nivel = 1; nivel <= 5; nivel++) {
+        printf("\n      Nivel %d      \n", nivel++);
         for (int i = 0; i < total; i++) {
-            if ((int)perguntas[i]->nivel == nivel) {
+            if ((int)perguntas[i].nivel == nivel) {
+                printf("Indice %d: \n", i);
+                mostraPergunta(&perguntas[i]);
                 printf("\n");
-                mostraPergunta(perguntas[i]);
             }
         }
     }
 }
 
 // Pesquisa pergunta pelo enunciado
-void pesquisaPergunta(Pergunta **perguntas, int total) {
+void pesquisaPergunta(Pergunta *perguntas, int total) {
+    printf("Digite a palavra para pesquisar: \n");
     char *pesquisa = leTextoDinamico();
     converteMaiscula(pesquisa);
     int encontrada = 0;
+
     for (int i = 0; i < total; i++) {
-        if (strstr(perguntas[i]->enunciado, pesquisa)) {
-            mostraPergunta(perguntas[i]);
+        if (strstr(perguntas[i].enunciado, pesquisa)) {
+            printf("Indice  %d: \n", i);
+            mostraPergunta(&perguntas[i]);
             encontrada = 1;
         }
     }
@@ -89,45 +93,45 @@ void pesquisaPergunta(Pergunta **perguntas, int total) {
 }
 
 // Altera pergunta existente
-void alterarPergunta(Pergunta **perguntas, int total) {
+void alterarPergunta(Pergunta *perguntas, int total) {
     int indice;
     printf("Qual índice da pergunta deseja alterar? ");
     scanf("%d", &indice);
     limpaBuffer();
+
     if (indice < 0 || indice >= total) {
         printf("Índice inválido!\n");
         return;
     }
 
     // Libera memória da pergunta atual
-    free(perguntas[indice]->enunciado);
-    for (int i = 0; i < 4; i++) free(perguntas[indice]->alternativas[i].texto);
-    free(perguntas[indice]);
+    free(perguntas[indice].enunciado);
+    for (int i = 0; i < 4; i++) free(perguntas[indice].alternativas[i].texto);
 
     // Recebe nova pergunta para substituir
-    Pergunta *nova = malloc(sizeof(Pergunta));
     printf("Digite o enunciado da nova questão:\n");
-    nova->enunciado = leTextoDinamico();
-    converteMaiscula(nova->enunciado);
+    perguntas[indice].enunciado = leTextoDinamico();
+    converteMaiscula(perguntas[indice].enunciado);
 
     char letras[] = {'A', 'B', 'C', 'D'};
     for (int i = 0; i < 4; i++) {
-        nova->alternativas[i].letra = letras[i];
+        perguntas[indice].alternativas[i].letra = letras[i];
         printf("Digite a alternativa %c:\n", letras[i]);
-        nova->alternativas[i].texto = leTextoDinamico();
-        converteMaiscula(nova->alternativas[i].texto);
+        perguntas[indice].alternativas[i].texto = leTextoDinamico();
+        converteMaiscula(perguntas[indice].alternativas[i].texto);
     }
 
     printf("Digite qual é a alternativa correta (A/B/C/D):\n");
-    scanf(" %c", &nova->correta);
-
+    scanf(" %c", &perguntas[indice].correta);
+    perguntas[indice].correta = toupper(perguntas[indice].correta);
+    
     int nivel;
     printf("Digite a dificuldade da pergunta (1-5):\n");
     scanf("%d", &nivel);
-    nova->nivel = nivel;
+    if (nivel < 1 || nivel > 5) nivel = 1;
+    perguntas[indice].nivel = (Dificuldade) nivel;
     limpaBuffer();
 
-    perguntas[indice] = nova;
     printf("Pergunta %d alterada com sucesso!\n", indice);
 }
 
@@ -150,8 +154,12 @@ void excluirPergunta(Pergunta **perguntas, int *total) {
         (*perguntas)[i] = (*perguntas)[i + 1];
     }
 
-    *perguntas = realloc(*perguntas, (*total - 1) * sizeof(Pergunta*));
-    (*total)--;
-    printf("Pergunta excluída com sucesso!\n");
-}
+    Pergunta *temp = realloc(*perguntas, (*total - 1) * sizeof(Pergunta));
+    if (temp || *total - 1 == 0) {
+        *perguntas = temp;
+        (*total)--;
+        printf("Pergunta excluída com sucesso!\n");
+    } else {
+        printf("Erro ao realocar vetor de perguntas!\n");
+    }
 

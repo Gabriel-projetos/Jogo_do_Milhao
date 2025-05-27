@@ -40,9 +40,10 @@ int main() {
     // Listar perguntas
     printf("\nDeseja listar as perguntas?\n1 - Sim\n2 - Não\n");
     scanf("%d", &op);
+    limpaBuffer();
     switch (op) {
         case 1:
-            listaPerguntas(&perguntas, total_perguntas);
+            listaPerguntas(perguntas, total_perguntas);
             break;
         case 2:
             printf("Continuando programa!\n");
@@ -55,9 +56,10 @@ int main() {
     // Pesquisar perguntas
     printf("\nDeseja pesquisar uma pergunta?\n1 - Sim\n2 - Não\n");
     scanf("%d", &op);
+    limpaBuffer();
     switch (op) {
         case 1:
-            pesquisaPergunta(&perguntas, total_perguntas);
+            pesquisaPergunta(perguntas, total_perguntas);
             break;
         case 2:
             printf("Continuando programa!\n");
@@ -70,9 +72,10 @@ int main() {
     // Alterar pergunta
     printf("\nDeseja trocar uma pergunta?\n1 - Sim\n2 - Não\n");
     scanf("%d", &op);
+    limpaBuffer();
     switch (op) {
         case 1:
-            alterarPergunta(&perguntas, total_perguntas);
+            alterarPergunta(perguntas, total_perguntas);
             break;
         case 2:
             printf("Continuando programa!\n");
@@ -85,6 +88,7 @@ int main() {
     // Excluir pergunta
     printf("\nDeseja excluir uma pergunta?\n1 - Sim\n2 - Não\n");
     scanf("%d", &op);
+    limpaBuffer();
     switch (op) {
         case 1:
             excluirPergunta(&perguntas, &total_perguntas);

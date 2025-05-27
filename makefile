@@ -23,7 +23,7 @@ $(EXEC): $(SRCS)
 
 # Limpa os arquivos executáveis (Windows)
 clean:
-	del /f /q $(EXEC).exe 2>nul || rm -f $(EXEC)
+	-@del /f /q $(EXEC).exe 2>nul || rm -f $(EXEC)
 
 # Executa o programa
 run: $(EXEC)
