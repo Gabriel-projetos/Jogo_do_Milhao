@@ -5,6 +5,22 @@
 #include "headers/pergunta.h"
 #include "headers/leitor_csv.h"
 #include "headers/funcoes_padrao.h"
+#include "headers/menu_inicial.h"
+
+int menuInicial(){
+    Opcao menu_opcao;
+    //Menu inicial
+    printf("Bem vindo ao Jogo do Milhão!\n");
+    printf("Escolha uma opção:\n");
+    printf("1 - Inserir pergunta\n");
+    printf("2 - Listar perguntas\n");
+    printf("3 - Pesquisar pergunta\n");
+    printf("4 - Alterar pergunta\n");
+    printf("5 - Excluir pergunta\n");
+    printf("6 - Jogar\n");
+    printf("0 - Sair\n");
+    scanf("%d", &menu_opcao);
+}//menuInicial
 
 int main() {
     setlocale(LC_ALL, "pt_BR.UTF-8");
@@ -12,6 +28,7 @@ int main() {
 
     Pergunta *perguntas = NULL;
     int op, total_perguntas = 0;
+    Opcao menu_opcao;
 
     // Carrega perguntas do CSV
     perguntas = carregaPerguntasDeCSV("questoes.csv", &total_perguntas);
@@ -21,84 +38,40 @@ int main() {
     }
     printf("Foram carregadas %d perguntas.\n", total_perguntas);
 
-    // Inserir nova pergunta
-    printf("\nDeseja inserir uma nova pergunta?\n1 - Sim\n2 - Não\n");
-    scanf("%d", &op);
-    getchar(); // limpar buffer
-    switch (op) {
-        case 1:
-            recebePergunta(&perguntas, &total_perguntas);
-            break;
-        case 2:
-            printf("Continuando programa!\n");
-            break;
-        default:
-            printf("Opção inválida!\n");
-            break;
-    }
+    //Menu Inicial
+    menu_opcao = menuInicial();
 
-    // Listar perguntas
-    printf("\nDeseja listar as perguntas?\n1 - Sim\n2 - Não\n");
-    scanf("%d", &op);
-    switch (op) {
-        case 1:
+    switch(menu_opcao){
+        case INSERIR:
+            recebePergunta(&perguntas, &total_perguntas);
+            salvaPerguntaNoCSV("questoes.csv", perguntas[total_perguntas - 1]);
+            break;
+        case LISTAR:
             listaPerguntas(&perguntas, total_perguntas);
             break;
-        case 2:
-            printf("Continuando programa!\n");
-            break;
-        default:
-            printf("Opção inválida!\n");
-            break;
-    }
-
-    // Pesquisar perguntas
-    printf("\nDeseja pesquisar uma pergunta?\n1 - Sim\n2 - Não\n");
-    scanf("%d", &op);
-    switch (op) {
-        case 1:
+        case PESQUISAR:
             pesquisaPergunta(&perguntas, total_perguntas);
             break;
-        case 2:
-            printf("Continuando programa!\n");
-            break;
-        default:
-            printf("Opção inválida!\n");
-            break;
-    }
-
-    // Alterar pergunta
-    printf("\nDeseja trocar uma pergunta?\n1 - Sim\n2 - Não\n");
-    scanf("%d", &op);
-    switch (op) {
-        case 1:
+        case ALTERAR:
             alterarPergunta(&perguntas, total_perguntas);
+            salvaPerguntaNoCSV("questoes.csv", perguntas[total_perguntas]);
             break;
-        case 2:
-            printf("Continuando programa!\n");
-            break;
-        default:
-            printf("Opção inválida!\n");
-            break;
-    }
-
-    // Excluir pergunta
-    printf("\nDeseja excluir uma pergunta?\n1 - Sim\n2 - Não\n");
-    scanf("%d", &op);
-    switch (op) {
-        case 1:
+        case EXCLUIR:
             excluirPergunta(&perguntas, &total_perguntas);
             break;
-        case 2:
-            printf("Continuando programa!\n");
-            break;
+        case JOGAR:
+            printf("Iniciando o jogo...\n");
+            // Não sei o que fazer aqui e to com muita preguiça de pensar agora
+        case SAIR:
+            printf("Saindo do programa...\n");
+            return 0;
         default:
-            printf("Opção inválida!\n");
-            break;
-    }
-
-    // Liberar memória
-    for (int i = 0; i < total_perguntas; i++) {
+            printf("Opção invalida!\n");
+            menu_opcao = menuInicial();
+    }//switch
+        
+        // Liberar memória
+        for (int i = 0; i < total_perguntas; i++) {
         free(perguntas[i].enunciado);
         for (int j = 0; j < 4; j++) {
             free(perguntas[i].alternativas[j].texto);

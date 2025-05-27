@@ -155,3 +155,18 @@ void excluirPergunta(Pergunta **perguntas, int *total) {
     printf("Pergunta excluída com sucesso!\n");
 }
 
+//Salva a pergunta no CSV para não perder os dados
+void salvaPerguntaNoCSV(const char *questoes, Pergunta *pergunta){
+    FILE *file = fopen(questoes, "a");
+    if(file == NULL){
+        printf("Erro ao abrir o arquivo %s\n", questoes);
+    }//if
+
+    fprintg(file, "%s;", pergunta->enunciado);
+    for(int i = 0; i < 4; i++){
+        fprintf(file, "%s;", pergunta->alternativas[i].texto);
+    }//for
+    
+    fprintf(file, "%c;%d\n", pergunta->correta, pergunta->nivel);
+    fclose(file);
+}//salvaPerguntaNoCSV
