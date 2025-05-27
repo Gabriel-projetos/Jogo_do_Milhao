@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../headers/pergunta.h"
-#include "../headers/funções_padrão.h"
+#include "../headers/funcoes_padrao.h"
 
 // Recebe nova pergunta, realocando o vetor de Pergunta*
 Pergunta** recebePergunta(Pergunta **perguntas, int *total) {
@@ -65,7 +65,7 @@ void mostraPergunta(Pergunta *pergunta) {
 void listaPerguntas(Pergunta **perguntas, int total) {
     for (int nivel = 1; nivel <= 5; nivel++) {
         for (int i = 0; i < total; i++) {
-            if (perguntas[i]->nivel == nivel) {
+            if ((int)perguntas[i]->nivel == nivel) {
                 printf("\n");
                 mostraPergunta(perguntas[i]);
             }
@@ -132,7 +132,7 @@ void alterarPergunta(Pergunta **perguntas, int total) {
 }
 
 // Exclui pergunta e reorganiza vetor
-void excluirPergunta(Pergunta ***perguntas, int *total) {
+void excluirPergunta(Pergunta **perguntas, int *total) {
     int indice;
     printf("Qual índice da pergunta deseja excluir (0 a %d)? ", *total - 1);
     scanf("%d", &indice);
@@ -143,9 +143,8 @@ void excluirPergunta(Pergunta ***perguntas, int *total) {
         return;
     }
 
-    free((*perguntas)[indice]->enunciado);
-    for (int i = 0; i < 4; i++) free((*perguntas)[indice]->alternativas[i].texto);
-    free((*perguntas)[indice]);
+    free((*perguntas)[indice].enunciado);
+    for (int i = 0; i < 4; i++) free((*perguntas)[indice].alternativas[i].texto);
 
     for (int i = indice; i < *total - 1; i++) {
         (*perguntas)[i] = (*perguntas)[i + 1];

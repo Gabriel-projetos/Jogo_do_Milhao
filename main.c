@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include "headers/pergunta.h"
 #include "headers/leitor_csv.h"
-#include "headers/funções_padrão.h"
+#include "headers/funcoes_padrao.h"
 
 int main() {
     setlocale(LC_ALL, "pt_BR.UTF-8");
@@ -42,7 +42,7 @@ int main() {
     scanf("%d", &op);
     switch (op) {
         case 1:
-            listaPerguntas(perguntas, total_perguntas);
+            listaPerguntas(&perguntas, total_perguntas);
             break;
         case 2:
             printf("Continuando programa!\n");
@@ -57,7 +57,7 @@ int main() {
     scanf("%d", &op);
     switch (op) {
         case 1:
-            pesquisaPergunta(perguntas, total_perguntas);
+            pesquisaPergunta(&perguntas, total_perguntas);
             break;
         case 2:
             printf("Continuando programa!\n");
@@ -72,7 +72,7 @@ int main() {
     scanf("%d", &op);
     switch (op) {
         case 1:
-            alterarPergunta(perguntas, total_perguntas);
+            alterarPergunta(&perguntas, total_perguntas);
             break;
         case 2:
             printf("Continuando programa!\n");

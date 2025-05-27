@@ -26,6 +26,6 @@ void pesquisaPergunta(Pergunta **perguntas, int total);
 void alterarPergunta(Pergunta **perguntas, int total);
 
 // Exclui pergunta em índice especificado e realoca vetor
-void excluirPergunta(Pergunta ***perguntas, int *total);
+void excluirPergunta(Pergunta **perguntas, int *total);
 
 #endif

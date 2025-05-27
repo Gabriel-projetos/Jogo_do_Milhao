@@ -5,11 +5,11 @@ EXEC = jogo_do_milhao
 CC = gcc
 
 # Diretórios
-SRC_DIR = Sourcers
+SRC_DIR = sources
 INC_DIR = Headers
 
 # Arquivos fonte com nome com acento
-SRCS = main.c $(SRC_DIR)/pergunta.c $(SRC_DIR)/funções_padrão.c
+SRCS = main.c $(SRC_DIR)/pergunta.c $(SRC_DIR)/funcoes_padrao.c $(SRC_DIR)/leitor_csv.c
 
 # Flags do compilador (inclui o diretório de headers)
 CFLAGS = -I$(INC_DIR) -Wall -Wextra
