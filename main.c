@@ -10,6 +10,7 @@
 #include "headers/jogo.h"
 
 int menuInicial(){
+    int op;
     Opcao menu_opcao;
     //Menu inicial
     printf("Bem vindo ao Jogo do Milhão!\n");
@@ -21,7 +22,9 @@ int menuInicial(){
     printf("5 - Excluir pergunta\n");
     printf("6 - Jogar\n");
     printf("0 - Sair\n");
-    scanf("%d", &menu_opcao);
+    scanf("%d", &op);
+    menu_opcao = (Opcao)op;
+    return menu_opcao;
 }//menuInicial
 
 int main() {
@@ -29,7 +32,7 @@ int main() {
     SetConsoleOutputCP(CP_UTF8);
 
     Pergunta *perguntas = NULL;
-    int op, total_perguntas = 0;
+    int total_perguntas = 0;
     Opcao menu_opcao;
 
     // Carrega perguntas do CSV
@@ -45,21 +48,20 @@ int main() {
     switch(menu_opcao){
         case INSERIR:
             recebePergunta(&perguntas, &total_perguntas);
-            salvaPerguntaNoCSV("questoes.csv", perguntas[total_perguntas - 1]);
+            salvaPerguntaNoCSV("questoes.csv", &perguntas[total_perguntas - 1]);
             break;
         case LISTAR:
-            listaPerguntas(&perguntas, total_perguntas);
+            listaPerguntas(perguntas, total_perguntas);
             break;
         case PESQUISAR:
-            pesquisaPergunta(&perguntas, total_perguntas);
+            pesquisaPergunta(perguntas, total_perguntas);
             break;
         case ALTERAR:
-            alterarPergunta(&perguntas, total_perguntas);
-            salvaPerguntaNoCSV("questoes.csv", perguntas[total_perguntas]);
+            alterarPergunta(perguntas, total_perguntas);
+            salvaPerguntaNoCSV("questoes.csv", &perguntas[total_perguntas]);
             break;
         case EXCLUIR:
             excluirPergunta(&perguntas, &total_perguntas);
-            salvaTodasPerguntasNoCSV("questoes.csv", perguntas, total_perguntas);
             break;
         case JOGAR:
             printf("Iniciando o jogo...\n");

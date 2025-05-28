@@ -28,4 +28,7 @@ void alterarPergunta(Pergunta *perguntas, int total);
 // Exclui pergunta em índice especificado e realoca vetor
 void excluirPergunta(Pergunta **perguntas, int *total);
 
+void mostraPergunta(Pergunta *pergunta);
+
+void salvaPerguntaNoCSV(const char *questoes, Pergunta *pergunta);
 #endif
