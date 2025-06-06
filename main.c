@@ -9,6 +9,7 @@
 #include "headers/menu_inicial.h"
 #include "headers/jogo.h"
 
+//Função do Menu Inicial
 int menuInicial(){
     int op;
     Opcao menu_opcao;
@@ -31,6 +32,7 @@ int main() {
     setlocale(LC_ALL, "pt_BR.UTF-8");
     SetConsoleOutputCP(CP_UTF8);
 
+    //Variaveis
     Pergunta *perguntas = NULL;
     int total_perguntas = 0;
     Opcao menu_opcao;
@@ -65,23 +67,21 @@ int main() {
             break;
         case JOGAR:
             printf("Iniciando o jogo...\n");
-                for (int nivel = 1; nivel <= 5; nivel++) {
-                    Pergunta *p = sorteiaPorNivel(&perguntas, total_perguntas, nivel);
+                    Pergunta *p = sorteiaPorNivel(&perguntas, total_perguntas, 1);
                     if (p != NULL) {
                         mostraPergunta(p);
                         printf("Digite a letra da alternativa correta: ");
                         char resposta;
                         scanf(" %c", &resposta);
-                        if (toupper(resposta) == toupper(p->correta)) {
+                        if (resposta == p->correta) {
                             printf("\033[0;32mCorreto!\033[0m\n");
                         } else {
                             printf("\033[0;31mErrado! A resposta correta era %c.\033[0m\n", p->correta);
                             break;
                         }
                     } else {
-                        printf("Sem pergunta disponível para o nível %d.\n", nivel);
-                    }
-                }
+                        printf("Sem pergunta disponível.\n");
+                    }//if e else
                 break;
         case SAIR:
                 printf("Saindo do programa...\n");
@@ -96,6 +96,7 @@ int main() {
                 return 0;
             default:
                 printf("Opção inválida!\n");
+                menu_opcao = menuInicial();
                 break;
         }
 

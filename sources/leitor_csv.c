@@ -3,7 +3,6 @@
 #include <string.h>
 #include <ctype.h>
 #include "../headers/leitor_csv.h"
-#include "../headers/funcoes_padrao.h"  // para converteMaiscula
 #include "../headers/pergunta.h"        // para struct Pergunta
 
 // Função para remover espaços no início e fim de uma string
@@ -25,14 +24,16 @@ char* trim(char *str) {
 
 // Função principal para carregar perguntas de um CSV
 Pergunta* carregaPerguntasDeCSV(const char *nome_arquivo, int *total) {
+    //Abre o arquivo CSV
     FILE *file = fopen(nome_arquivo, "r");
     if (!file) {
         printf("Erro ao abrir o arquivo %s\n", nome_arquivo);
         *total = 0;
         return NULL;
-    }
+    }//if
 
-    int capacidade = 10;
+
+    int capacidade = 15;
     int count = 0;
     Pergunta *perguntas = malloc(capacidade * sizeof(Pergunta));
     if (!perguntas) {
@@ -40,7 +41,7 @@ Pergunta* carregaPerguntasDeCSV(const char *nome_arquivo, int *total) {
         fclose(file);
         *total = 0;
         return NULL;
-    }
+    }//if
 
     char linha[1024];
 
@@ -58,13 +59,13 @@ Pergunta* carregaPerguntasDeCSV(const char *nome_arquivo, int *total) {
                 for (int i = 0; i < count; i++) {
                     free(perguntas[i].enunciado);
                     for (int j = 0; j < 4; j++) free(perguntas[i].alternativas[j].texto);
-                }
+                }//for
                 free(perguntas);
                 *total = 0;
                 return NULL;
-            }
+            }//if interno
             perguntas = temp;
-        }
+        }//if externo
         
         // Tokeniza linha pelo separador ';'
         char *token = strtok(linha, ";");

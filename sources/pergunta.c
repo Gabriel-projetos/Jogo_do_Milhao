@@ -3,7 +3,6 @@
 #include <string.h>
 #include <ctype.h>
 #include "../headers/pergunta.h"
-#include "../headers/funcoes_padrao.h"
 #include "../headers/leitor_csv.h"
 
 // Recebe nova pergunta, realocando o vetor de Pergunta*

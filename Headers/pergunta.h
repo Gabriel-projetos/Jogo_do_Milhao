@@ -3,6 +3,7 @@
 
 #include "alternativa.h"
 #include "dificuldade.h"
+#include "funcoes_padrao.h"
 
 typedef struct {
     char *enunciado;
