@@ -1,6 +1,10 @@
 #ifndef PERGUNTA_H
 #define PERGUNTA_H
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 #include "alternativa.h"
 #include "dificuldade.h"
 #include "funcoes_padrao.h"

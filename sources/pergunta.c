@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
 #include "../headers/pergunta.h"
 #include "../headers/leitor_csv.h"
 

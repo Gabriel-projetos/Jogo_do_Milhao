@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>      // para toupper()
-#include <string.h>
 #include "../headers/pergunta.h"
 
 // Função para ler uma linha de texto dinamicamente (até ENTER)

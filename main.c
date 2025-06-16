@@ -51,48 +51,34 @@ int main() {
         case INSERIR:
             recebePergunta(&perguntas, &total_perguntas);
             salvaPerguntaNoCSV("questoes.csv", &perguntas[total_perguntas - 1]);
+            menu_opcao = menuInicial();
             break;
         case LISTAR:
             listaPerguntas(perguntas, total_perguntas);
+            menu_opcao = menuInicial();
             break;
         case PESQUISAR:
             pesquisaPergunta(perguntas, total_perguntas);
+            menu_opcao = menuInicial();
             break;
         case ALTERAR:
             alterarPergunta(perguntas, total_perguntas);
             salvaPerguntaNoCSV("questoes.csv", &perguntas[total_perguntas]);
+            menu_opcao = menuInicial();
             break;
         case EXCLUIR:
             excluirPergunta(&perguntas, &total_perguntas);
+            menu_opcao = menuInicial();
             break;
         case JOGAR:
             printf("Iniciando o jogo...\n");
-                    Pergunta *p = sorteiaPorNivel(&perguntas, total_perguntas, 1);
-                    if (p != NULL) {
-                        mostraPergunta(p);
-                        printf("Digite a letra da alternativa correta: ");
-                        char resposta;
-                        scanf(" %c", &resposta);
-                        if (resposta == p->correta) {
-                            printf("\033[0;32mCorreto!\033[0m\n");
-                        } else {
-                            printf("\033[0;31mErrado! A resposta correta era %c.\033[0m\n", p->correta);
-                            break;
-                        }
-                    } else {
-                        printf("Sem pergunta disponível.\n");
-                    }//if e else
-                break;
+            jogoAcontece(perguntas, total_perguntas);
+            printf("Fim do jogo!\n");
+            liberaRecursos(perguntas, total_perguntas);
+            break;
         case SAIR:
                 printf("Saindo do programa...\n");
-                // Liberar memória
-                for (int i = 0; i < total_perguntas; i++) {
-                    free(perguntas[i].enunciado);
-                    for (int j = 0; j < 4; j++) {
-                        free(perguntas[i].alternativas[j].texto);
-                    }
-                }
-                free(perguntas);
+                liberaRecursos(perguntas, total_perguntas);
                 return 0;
             default:
                 printf("Opção inválida!\n");

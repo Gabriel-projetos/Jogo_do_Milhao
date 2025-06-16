@@ -3,8 +3,8 @@
 
 #include "pergunta.h"
 
-Pergunta* sorteiaPergunta(Pergunta **perguntas, int total);
+Pergunta* sorteiaPergunta(Pergunta *perguntas, int total);
 void embaralhaPerguntas(Pergunta **originais, Pergunta **embaralhadas, int total);
-Pergunta* sorteiaPorNivel(Pergunta **perguntas, int total, int nivel);
+Pergunta* sorteiaPorNivel(Pergunta *perguntas, int total, int nivel);
 
 #endif

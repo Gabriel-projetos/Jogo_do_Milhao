@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
 #include "../headers/leitor_csv.h"
 #include "../headers/pergunta.h"        // para struct Pergunta
 
@@ -95,7 +91,11 @@ Pergunta* carregaPerguntasDeCSV(const char *nome_arquivo, int *total) {
 
         // Letra da alternativa correta
         token = strtok(NULL, ";");
-        char correta = (token && strlen(token) > 0) ? toupper(token[0]) : 'A';
+        char correta = 'A';
+        if(token && strlen(token) > 0){
+            char *ptr = trim(token);
+            correta = toupper(ptr[0]);
+        }//if
 
         // Nível de dificuldade
         token = strtok(NULL, ";");
