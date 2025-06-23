@@ -1,5 +1,7 @@
-#include "../headers/leitor_csv.h"
-#include "../headers/pergunta.h"        // para struct Pergunta
+#include "../Headers/leitor_csv.h"
+#include "../Headers/pergunta.h"       
+#include "../Headers/funcoes_padrao.h"  
+
 
 // Função para remover espaços no início e fim de uma string
 char* trim(char *str) {
