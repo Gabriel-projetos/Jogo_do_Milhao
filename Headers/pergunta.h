@@ -1,19 +1,19 @@
 #ifndef PERGUNTA_H
 #define PERGUNTA_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
+#include <stdio.h>    
+#include <stdlib.h>   
+#include <string.h>   
+#include <ctype.h>    
+
 #include "alternativa.h"
 #include "dificuldade.h"
-#include "funcoes_padrao.h"
 
 typedef struct {
     char *enunciado;
     Alternativa alternativas[4];
-    char correta;       // Letra da alternativa correta: 'A', 'B', 'C' ou 'D'
-    Dificuldade nivel;  // Nível de dificuldade (1 a 5)
+    char correta;     // Letra da alternativa correta: 'A', 'B', 'C' ou 'D'
+    Dificuldade nivel; // Nível de dificuldade (1 a 5)
 } Pergunta;
 
 // Protótipos das funções para manipulação das perguntas
