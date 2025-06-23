@@ -1,5 +1,6 @@
-#include "../headers/pergunta.h"
-#include "../headers/leitor_csv.h"
+#include "../Headers/pergunta.h"
+#include "../Headers/leitor_csv.h"
+#include "../Headers/funcoes_padrao.h" 
 
 // Recebe nova pergunta, realocando o vetor de Pergunta*
 void recebePergunta(Pergunta **perguntas, int *total) {
