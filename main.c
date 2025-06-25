@@ -9,11 +9,11 @@
 #include <ctype.h>     // Para toupper
 
 // Inclui o cabeçalho das telas, que agora contém as definições de GameScreen e os protótipos das funções de tela.
-#include "Headers/telas_jogo.h" 
+#include "telas_jogo.h" 
 
 // Inclua os cabeçalhos das suas outras funcionalidades que o main.c chama diretamente no início.
-#include "Headers/leitor_csv.h"      // Para carregaPerguntasDeCSV
-#include "Headers/funcoes_padrao.h"  // Para liberaRecursos
+#include "leitor_csv.h"      // Para carregaPerguntasDeCSV
+#include "funcoes_padrao.h"  // Para liberaRecursos
 #include "ranking.h"                 // Inclui o cabeçalho do ranking
 
 // --- Variáveis Globais (Definições REAIS) ---
