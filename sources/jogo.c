@@ -2,9 +2,15 @@
 #include <stdio.h> 
 #include <stdlib.h> 
 #include <ctype.h> 
+#include <string.h>
 #include "pergunta.h"
 #include "jogo.h"
 #include "funcoes_padrao.h"
+
+typedef struct {
+    char nome[50];
+    int acertos;
+} ProgressoJogador;
 
 /**
  * @brief Sorteia Perguntas por Nível de Dificuldade, evitando repetidas.
@@ -24,6 +30,21 @@ Pergunta* sorteiaPorNivel(Pergunta *perguntas, int total, int nivel) {
         tentativas++;
     }
     return NULL;
+}
+
+/**
+ * @brief Função que salva o progresso do jogador em um arquivo binário
+ * @param progresso Ponteiro para a estrutura ProgressoJogador que contém os dados do jogador
+ * @param nome_arquivo Nome do arquivo onde o progresso será salvo
+ */
+void salvaProgresso(ProgressoJogador *progresso, const char *nome_arquivo) {
+    FILE *fp = fopen(nome_arquivo, "ab"); // abre para acrescentar no final
+    if (!fp) {
+        printf("Erro ao abrir arquivo para salvar progresso!\n");
+        return;
+    }
+    fwrite(progresso, sizeof(ProgressoJogador), 1, fp);
+    fclose(fp);
 }
 
 /**
@@ -76,6 +97,13 @@ void jogoAcontece(Pergunta perguntas[], int total) {
             }
         } else {
             printf("\033[0;31mErrado! A resposta correta era %c.\033[0m\n", pergunta_sorteada->correta);
+
+            ProgressoJogador progresso;
+            printf("Digite seu nome para salvar o progresso: ");
+            scanf("%49s", progresso.nome);
+            progresso.acertos = (nivel - 1) * 3 + acertosNoNivel; // total de acertos até aqui
+
+            salvaProgresso(&progresso, "progresso.bin");
             return; // encerra o jogo ao errar
         }
     }
