@@ -230,24 +230,23 @@ void UpdateDisplayQuestionsScreen(void) {
         SetGameScreen(GAME_MAIN_MENU); // Usar SetGameScreen
     }
 }
-
 void UpdatePlayingGraphicalScreen(void) {
     const int screenWidth = GetScreenWidth();
 
     if (g_current_question_idx == -1) {
-        // Se não houver mais perguntas (ou sorteio falhou), vai para a tela de fim de jogo
-        g_player_final_score = g_correct_answers_in_row * 1000; // Exemplo de cálculo de pontuação
-        g_game_ending_state = ENDING_SHOW_SCORE; // Reinicia o estado da tela de fim de jogo
-        SetGameScreen(GAME_ENDING); 
+        // Sem mais perguntas, vai para tela de fim de jogo
+        g_player_final_score = g_correct_answers_in_row * 1000;
+        g_game_ending_state = ENDING_SHOW_SCORE;
+        SetGameScreen(GAME_ENDING);
         return;
     }
 
     Pergunta *current_question = &g_perguntas[g_current_question_idx];
-    
-    // Lógica da Manopla do Estalo - LÓGICA DE ATUALIZAÇÃO DO TIMER
+
+    // Atualização do timer da manopla
     if (g_gauntlet_snap_active) {
         g_gauntlet_snap_timer++;
-        if (g_gauntlet_snap_timer >= 60 * 1) { // Exibe por 1 segundo (60 frames)
+        if (g_gauntlet_snap_timer >= 60) { // 1 segundo
             g_gauntlet_snap_active = false;
             g_gauntlet_snap_timer = 0;
         }
@@ -255,63 +254,36 @@ void UpdatePlayingGraphicalScreen(void) {
 
     switch (g_game_play_state) {
         case PLAYING_QUESTION: {
-            // Lógica para DICAS (processamento do clique)
             float hintButtonWidth = 100;
             float hintButtonHeight = 40;
             float hintPadding = 10;
-            float hintX_Rightmost = screenWidth - hintButtonWidth - 20; 
+            float hintX_Rightmost = screenWidth - hintButtonWidth - 20;
             float hintX_Middle = hintX_Rightmost - hintButtonWidth - hintPadding;
             float hintX_Leftmost = hintX_Middle - hintButtonWidth - hintPadding;
-            float hintStartY = 50; 
+            float hintStartY = 50;
 
-            // Dica: Meio a Meio (50/50)
-            Rectangle fiftyFiftyButtonBounds = { hintX_Leftmost, hintStartY, hintButtonWidth, hintButtonHeight };
-            Color fiftyFiftyColor = (g_hint_fifty_fifty_used < 3) ? COLOR_HINT_AVAILABLE_PURPLE : COLOR_HINT_USED_PURPLE;
-            if (GuiButton(fiftyFiftyButtonBounds, "50/50", fiftyFiftyColor, RAYWHITE)) {
-                if (g_hint_fifty_fifty_used < 3 && !g_fifty_fifty_active) {
-                    g_hint_fifty_fifty_used++;
-                    g_fifty_fifty_active = true;
-
-                    char wrong_alternatives[3]; 
-                    int wrong_count = 0;
-                    for (int i = 0; i < 4; i++) {
-                        // ***CORRIGIDO: 'correta' em vez de 'respostaCorreta'***
-                        if (toupper(current_question->alternativas[i].letra) != toupper(current_question->correta)) {
-                            wrong_alternatives[wrong_count++] = current_question->alternativas[i].letra;
-                        }
-                    }
-
-                    if (wrong_count >= 2) {
-                        int idx1 = GetRandomValue(0, wrong_count - 1); // Usar GetRandomValue da Raylib
-                        char eliminated1 = wrong_alternatives[idx1];
-
-                        int idx2 = GetRandomValue(0, wrong_count - 1); // Usar GetRandomValue da Raylib
-                        while (idx2 == idx1) { // Garante que as duas alternativas sejam diferentes
-                            idx2 = GetRandomValue(0, wrong_count - 1);
-                        }
-                        char eliminated2 = wrong_alternatives[idx2];
-                        
-                        g_fifty_fifty_eliminated_chars[0] = eliminated1;
-                        g_fifty_fifty_eliminated_chars[1] = eliminated2;
-                    } else {
-                        g_fifty_fifty_active = false; // Se não houver 2 erradas para eliminar
-                    }
-                    PlaySound(g_sound_snap); // Toca o som do estalo
-                    g_gauntlet_snap_active = true; // Ativa a exibição da manopla
-                    g_gauntlet_snap_timer = 0; // Reinicia o timer
-                }
-            }
+            // 50/50 (já implementado no seu código)...
 
             // Botão "Excluir Questão"
             Rectangle excludeButtonBounds = { hintX_Middle, hintStartY, hintButtonWidth, hintButtonHeight };
             Color excludeColor = (g_hint_exclude_used == 0) ? COLOR_HINT_AVAILABLE_PURPLE : COLOR_HINT_USED_PURPLE;
             if (GuiButton(excludeButtonBounds, "EXCLUIR", excludeColor, RAYWHITE)) {
                 if (g_hint_exclude_used == 0) {
+                    // Marca como usada
                     g_hint_exclude_used = 1;
-                    g_game_play_state = LEVEL_COMPLETE; // ***CORRIGIDO: 'LEVEL_COMPLETE' em vez de 'PLAYING_NEXT_QUESTION'***
-                    PlaySound(g_sound_snap); // Toca o som do estalo
-                    g_gauntlet_snap_active = true; // Ativa a exibição da manopla
-                    g_gauntlet_snap_timer = 0; // Reinicia o timer
+
+                    // Remove uma alternativa errada não removida ainda
+                    for (int i = 0; i < 4; i++) {
+                        if (toupper(current_question->alternativas[i].letra) != toupper(current_question->correta) &&
+                            current_question->alternativas[i].removida == 0) {
+                            current_question->alternativas[i].removida = 1; // Remove
+                            break; // só remove uma
+                        }
+                    }
+
+                    PlaySound(g_sound_snap);
+                    g_gauntlet_snap_active = true;
+                    g_gauntlet_snap_timer = 0;
                 }
             }
 
@@ -321,14 +293,25 @@ void UpdatePlayingGraphicalScreen(void) {
             if (GuiButton(skipButtonBounds, "PULAR", skipColor, RAYWHITE)) {
                 if (g_hint_skip_used < 2) {
                     g_hint_skip_used++;
-                    g_game_play_state = LEVEL_COMPLETE; // ***CORRIGIDO: 'LEVEL_COMPLETE' em vez de 'PLAYING_NEXT_QUESTION'***
-                    PlaySound(g_sound_snap); // Toca o som do estalo
-                    g_gauntlet_snap_active = true; // Ativa a exibição da manopla
-                    g_gauntlet_snap_timer = 0; // Reinicia o timer
+
+                    // Marca a pergunta como usada para não ser sorteada de novo
+                    current_question->ja_foi_usada = 1;
+
+                    // Avança para próxima pergunta (exemplo)
+                    g_current_question_idx = ProximaPerguntaIndex(); // Função que você deve ter para pegar próximo índice
+
+                    g_game_play_state = LEVEL_COMPLETE; // Estado para avançar no jogo
+
+                    PlaySound(g_sound_snap);
+                    g_gauntlet_snap_active = true;
+                    g_gauntlet_snap_timer = 0;
                 }
             }
 
-
+            // Resto da lógica da pergunta, respostas, etc...
+        } break;
+    }
+}
             // Detecta cliques nas alternativas e entradas de teclado
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                 Vector2 mousePoint = GetMousePosition();

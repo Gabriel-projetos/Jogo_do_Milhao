@@ -124,8 +124,7 @@ int main(void) {
         printf("ERRO CRITICO: Falha ao carregar ou inicializar o ranking. A funcionalidade de ranking pode estar desativada.\n");
     }
 
-    // Ajusta volume e inicia música de fundo
-    SetMusicVolume(g_music_background, 0.5f); // volume 50%
+    // Inicia música de fundo
     PlayMusicStream(g_music_background);
 
     // --- Loop Principal do Jogo ---
