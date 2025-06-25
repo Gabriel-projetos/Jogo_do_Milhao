@@ -4,7 +4,7 @@
 #include "pergunta.h"
 
 typedef struct {
-    int nome[50]; // Nível de dificuldade (1 a 5)
+   char nome[50]; // Nome recebido do teclado
     int acertos; // Número de acertos
 } ProgressoJogador;
 

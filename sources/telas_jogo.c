@@ -122,7 +122,7 @@ void UpdateTitleScreen(void) {
 }
 
 void UpdateMainMenuScreen(void) {
-    const int screenWidth = GetScreenWidth();
+    int screenWidth = GetScreenWidth();
     float buttonWidth = screenWidth * 0.7f;
     float buttonHeight = 60;
     float startY = GetScreenHeight() / 4;

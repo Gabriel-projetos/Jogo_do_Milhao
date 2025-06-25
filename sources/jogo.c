@@ -7,11 +7,6 @@
 #include "jogo.h"
 #include "funcoes_padrao.h"
 
-typedef struct {
-    char nome[50];
-    int acertos;
-} ProgressoJogador;
-
 /**
  * @brief Sorteia Perguntas por Nível de Dificuldade, evitando repetidas.
  * @param perguntas Array de Pergunta
@@ -20,17 +15,24 @@ typedef struct {
  * @return Ponteiro para a Pergunta sorteada ou NULL se não encontrar
  */
 Pergunta* sorteiaPorNivel(Pergunta *perguntas, int total, int nivel) {
-    int tentativas = 0;
-    while (tentativas < 100) {
-        int idx = rand() % total;
-        if (perguntas[idx].nivel == nivel && perguntas[idx].ja_foi_usada == 0) {
-            perguntas[idx].ja_foi_usada = 1;
-            return &perguntas[idx];
+    int indices_validos[total];
+    int contador = 0;
+
+    // Coleta os índices de perguntas disponíveis do nível desejado
+    for (int i = 0; i < total; i++) {
+        if (perguntas[i].nivel == nivel && perguntas[i].ja_foi_usada == 0) {
+            indices_validos[contador++] = i;
         }
-        tentativas++;
     }
-    return NULL;
+
+    if (contador == 0) return NULL; // Nenhuma pergunta disponível
+
+    int sorteado = indices_validos[rand() % contador];
+    perguntas[sorteado].ja_foi_usada = 1;
+    return &perguntas[sorteado];
 }
+
+
 
 /**
  * @brief Função que salva o progresso do jogador em um arquivo binário
@@ -53,32 +55,29 @@ void salvaProgresso(ProgressoJogador *progresso, const char *nome_arquivo) {
  * @param total Número total de perguntas
  */
 void jogoAcontece(Pergunta perguntas[], int total) {
-    int nivel = 1;
-    int acertosNoNivel = 0;
+    int pergunta_atual = 1;
     char resposta;
+    int acertos = 0;
 
-    // Seleciona a pergunta do milhão (nível 5) antecipadamente
-    Pergunta *pergunta_milhao = NULL;
-    for (int i = 0; i < total; i++) {
-        if (perguntas[i].nivel == 5 && perguntas[i].ja_foi_usada == 0) {
-            pergunta_milhao = &perguntas[i];
-            perguntas[i].ja_foi_usada = 1;
-            break;
-        }
-    }
-    if (pergunta_milhao == NULL) {
-        printf("Erro: Nenhuma pergunta do milhão disponível.\n");
-        return;
-    }
+    while (pergunta_atual <= 15) {
+        int nivel;
 
-    while (1) {
+        // Define o nível com base na questão atual
+        if (pergunta_atual <= 2)
+            nivel = 1; // Muito fácil
+        else if (pergunta_atual <= 4)
+            nivel = 2; // Fácil
+        else if (pergunta_atual <= 8)
+            nivel = 3; // Médio
+        else if (pergunta_atual <= 12)
+            nivel = 4; // Difícil
+        else
+            nivel = 5; // Muito difícil
+
         Pergunta *pergunta_sorteada = sorteiaPorNivel(perguntas, total, nivel);
         if (pergunta_sorteada == NULL) {
-            // Não tem mais perguntas no nível atual, sobe de nível
-            nivel++;
-            acertosNoNivel = 0;
-            if (nivel == 5) break; // Chegou no nível do milhão
-            continue;
+            printf("Não há mais perguntas disponíveis para o nível %d.\n", nivel);
+            break;
         }
 
         mostraPergunta(pergunta_sorteada);
@@ -89,27 +88,28 @@ void jogoAcontece(Pergunta perguntas[], int total) {
 
         if (resposta == pergunta_sorteada->correta) {
             printf("\033[0;32mCorreto!\033[0m\n");
-            acertosNoNivel++;
-            if (acertosNoNivel == 3) {
-                nivel++;
-                acertosNoNivel = 0;
-                if (nivel == 5) break; // Chegou no nível do milhão
-            }
+            acertos++;
+            pergunta_atual++;
         } else {
             printf("\033[0;31mErrado! A resposta correta era %c.\033[0m\n", pergunta_sorteada->correta);
 
             ProgressoJogador progresso;
             printf("Digite seu nome para salvar o progresso: ");
             scanf("%49s", progresso.nome);
-            progresso.acertos = (nivel - 1) * 3 + acertosNoNivel; // total de acertos até aqui
-
+            progresso.acertos = acertos;
             salvaProgresso(&progresso, "progresso.bin");
-            return; // encerra o jogo ao errar
+            return;
         }
     }
 
-    // Pergunta do Milhão
-    perguntaDoMilhao(pergunta_milhao);
+    if (pergunta_atual > 15) {
+        printf("\033[1;32mParabéns! Você venceu o jogo!\033[0m\n");
+        ProgressoJogador progresso;
+        printf("Digite seu nome para salvar o progresso: ");
+        scanf("%49s", progresso.nome);
+        progresso.acertos = acertos;
+        salvaProgresso(&progresso, "progresso.bin");
+    }
 }
 
 /**

@@ -94,13 +94,13 @@ int main(void) {
     }
 
     // CARREGA TODOS OS SONS E MÚSICAS DENTRO DO MAIN!
-    g_music_background = LoadMusicStream("assets/sounds/TemaMarvel.ogg"); 
-    g_sound_correct = LoadSound("assets/sounds/Acerto.ogg"); 
-    g_sound_wrong = LoadSound("assets/sounds/Erro.ogg");   
-    g_sound_win = LoadSound("assets/sounds/Vitoria.ogg");  
-    g_sound_lose = LoadSound("assets/sounds/Derrota.ogg");  
-    g_sound_menu_click = LoadSound("assets/sounds/Botao.ogg"); 
-    g_sound_snap = LoadSound("assets/sounds/estalo_thanos.ogg");
+    g_music_background = LoadMusicStream("assets/sons/TemaMarvel.ogg"); 
+    g_sound_correct = LoadSound("assets/sons/Acerto.ogg"); 
+    g_sound_wrong = LoadSound("assets/sons/Erro.ogg");   
+    g_sound_win = LoadSound("assets/sons/Vitoria.ogg");  
+    g_sound_lose = LoadSound("assets/sons/Derrota.ogg");  
+    g_sound_menu_click = LoadSound("assets/sons/Botao.ogg"); 
+    g_sound_snap = LoadSound("assets/sons/estalo_thanos.ogg");
 
 
     // CARREGA ATIVOS DA MANOPLA (Imagem e Som do Estalo)
