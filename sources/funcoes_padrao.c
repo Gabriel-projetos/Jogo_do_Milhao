@@ -1,4 +1,4 @@
-#include "../headers/pergunta.h"
+#include "pergunta.h"
 
 // Função para ler uma linha de texto dinamicamente (até ENTER)
 char *leTextoDinamico(){

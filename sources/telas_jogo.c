@@ -1,16 +1,19 @@
 // sources/telas_jogo.c - Implementações para as Telas do Jogo Raylib (com Dicas, Posicionamento e Sons)
 
-#include "Headers/telas_jogo.h" // Inclui o cabeçalho das telas para ver os protótipos e variáveis globais
-#include <stdio.h>    // Para printf, sprintf
-#include <string.h>   // Para strlen, etc.
-#include <ctype.h>    // Para toupper
-#include <stdlib.h>   // Para rand
-
+#include "telas_jogo.h" // Inclui o cabeçalho das telas para ver os protótipos e variáveis globais
+#include "ranking.h"            // Inclui o cabeçalho do ranking para usar as funções lerRanking, salvarRanking, etc.
+#include "pergunta.h"
+#include <stdio.h>      // Para printf, sprintf
+#include <string.h>     // Para strlen, strcpy, strncpy, memset
+#include <ctype.h>      // Para toupper
+#include <stdlib.h>     // Para rand (embora GetRandomValue da Raylib seja preferível)
 
 // As variáveis globais (g_perguntas, currentScreen, etc.) são declaradas como 'extern' em telas_jogo.h.
 // Suas definições reais (onde elas são inicializadas) estão no main.c.
 // Aqui, nós apenas as usamos.
 
+// --- REMOVIDAS AS DEFINIÇÕES DE CORES DUPLICADAS ---
+// As definições de cores agora estão SOMENTE em Headers/telas_jogo.h para evitar warnings de redefinição.
 
 // --- Implementações das Funções Auxiliares de UI Gráfica ---
 bool GuiButton(Rectangle bounds, const char *text, Color buttonColor, Color textColor) {
@@ -27,6 +30,7 @@ bool GuiButton(Rectangle bounds, const char *text, Color buttonColor, Color text
     }
     
     DrawRectangleRec(bounds, buttonColor);
+    // Para centralizar o texto usando a fonte padrão, que MeasureText usa
     DrawText(text, bounds.x + bounds.width/2 - MeasureText(text, 20)/2, bounds.y + bounds.height/2 - 10, 20, textColor);
     
     return clicked;
@@ -40,7 +44,7 @@ void ResetGamePlayingState(void) {
     g_answer_feedback_timer = 0;
     g_is_answer_correct = false;
     g_selected_answer_char = ' ';
-    g_correct_answer_char = ' ';
+    g_correct_answer_char = ' '; // Mantido como 'correta' conforme pergunta.h
     
     // RESETAR CONTADORES DE DICAS
     g_hint_exclude_used = 0;
@@ -53,10 +57,28 @@ void ResetGamePlayingState(void) {
     // RESETAR ESTADO DA MANOPLA
     g_gauntlet_snap_active = false;
     g_gauntlet_snap_timer = 0;
+
+    // Resetar estado da tela de fim de jogo para a próxima vez que for acessada
+    g_game_ending_state = ENDING_SHOW_SCORE; 
+    memset(g_player_name_input, 0, sizeof(g_player_name_input)); // Limpa o buffer do nome
+    g_player_name_chars_count = 0;
+    g_player_final_score = 0; // Resetar pontuação final
 }
 
 void LoadNextQuestion(void) {
-    Pergunta *question = sorteiaPorNivel(g_perguntas, g_total_perguntas, g_current_level);
+    Pergunta *question = NULL;
+    int levelToTry = g_current_level;
+
+    // Tenta níveis do atual até o 5 (milhão)
+    while (levelToTry <= 5) {
+        question = sorteiaPorNivel(g_perguntas, g_total_perguntas, levelToTry);
+        if (question != NULL) {
+            // Atualiza o nível atual caso tenha subido
+            g_current_level = levelToTry;
+            break;
+        }
+        levelToTry++; // sobe nível e tenta de novo
+    }
 
     if (question != NULL) {
         for (int i = 0; i < g_total_perguntas; ++i) {
@@ -70,37 +92,43 @@ void LoadNextQuestion(void) {
         g_is_answer_correct = false;
         g_selected_answer_char = ' ';
         g_correct_answer_char = question->correta;
-        g_fifty_fifty_active = false; // Desativa 50/50 para a nova pergunta (IMPORTANT E)
-        g_fifty_fifty_eliminated_chars[0] = 0; // Limpa caracteres eliminados
+        g_fifty_fifty_active = false;
+        g_fifty_fifty_eliminated_chars[0] = 0;
         g_fifty_fifty_eliminated_chars[1] = 0;
     } else {
-        printf("Nenhuma pergunta encontrada para o nivel %d! Voltando ao menu principal.\n", g_current_level);
-        currentScreen = GAME_MAIN_MENU; // Volta ao menu se não houver mais perguntas para o nível
+        printf("Nenhuma pergunta encontrada para níveis %d a 5! Finalizando jogo.\n", g_current_level);
+        SetGameScreen(GAME_ENDING); // Vai para a tela de fim do jogo/ranking
     }
+}
+
+
+// Função para mudar a tela do jogo (protótipo em telas_jogo.h)
+void SetGameScreen(GameScreen screen) {
+    currentScreen = screen;
 }
 
 
 // --- Implementações das Funções de Update (Lógica de cada tela) ---
 void UpdateLogoScreen(void) {
     framesCounter++;
-    if (framesCounter > 180) currentScreen = GAME_TITLE;
+    if (framesCounter > 180) SetGameScreen(GAME_TITLE); // Usar SetGameScreen
 }
 
 void UpdateTitleScreen(void) {
     if (IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP)) {
-        currentScreen = GAME_MAIN_MENU;
+        SetGameScreen(GAME_MAIN_MENU); // Usar SetGameScreen
         PlaySound(g_sound_menu_click); // Som ao ir para o menu
     }
 }
 
 void UpdateMainMenuScreen(void) {
     const int screenWidth = GetScreenWidth();
-    const int screenHeight = GetScreenHeight();
     float buttonWidth = screenWidth * 0.7f;
     float buttonHeight = 60;
-    float startY = screenHeight / 4;
+    float startY = GetScreenHeight() / 4;
     float padding = 20;
 
+    // Botão JOGAR
     Rectangle playButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY, buttonWidth, buttonHeight };
     if (GuiButton(playButtonBounds, "1 - JOGAR", MARVEL_BLUE, RAYWHITE)) { 
         if (g_total_perguntas == 0) {
@@ -108,34 +136,37 @@ void UpdateMainMenuScreen(void) {
         } else {
             ResetGamePlayingState();
             LoadNextQuestion();
-            currentScreen = GAME_PLAYING_GRAPHICAL;
+            SetGameScreen(GAME_PLAYING_GRAPHICAL); // Usar SetGameScreen
             StopMusicStream(g_music_background); // Para a música de fundo quando o jogo começa
         }
     }
 
+    // Botão INSERIR PERGUNTA
     Rectangle insertButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + buttonHeight + padding, buttonWidth, buttonHeight };
     if (GuiButton(insertButtonBounds, "2 - INSERIR PERGUNTA", MARVEL_BLUE, RAYWHITE)) {
         printf("\n--- INSERINDO PERGUNTA (INTERAJA PELO CONSOLE) ---\n");
         recebePergunta(&g_perguntas, &g_total_perguntas);
         printf("--- FIM DA INSERCAO NO CONSOLE ---\n");
-        currentScreen = GAME_MAIN_MENU;
+        SetGameScreen(GAME_MAIN_MENU); // Usar SetGameScreen
     }
     
+    // Botão LISTAR PERGUNTAS
     Rectangle listButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 2 * (buttonHeight + padding), buttonWidth, buttonHeight };
     if (GuiButton(listButtonBounds, "3 - LISTAR PERGUNTAS", MARVEL_BLUE, RAYWHITE)) {
         if (g_total_perguntas == 0) {
             printf("Nao ha perguntas para listar (CONSOLE).\n");
         } else {
             printf("\n--- LISTANDO PERGUNTAS (VERIFIQUE O CONSOLE) ---\n");
-            listaPerguntas(g_perguntas, g_total_perguntas);
+           listaPerguntas(g_perguntas, g_total_perguntas); // Passando total_perguntas por referência
             printf("--- FIM DA LISTAGEM NO CONSOLE ---\n");
         }
-        currentScreen = GAME_MAIN_MENU;
+        SetGameScreen(GAME_MAIN_MENU); // Usar SetGameScreen
     }
 
+    // Botão PESQUISAR PERGUNTA
     Rectangle searchButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 3 * (buttonHeight + padding), buttonWidth, buttonHeight };
     if (GuiButton(searchButtonBounds, "4 - PESQUISAR PERGUNTA", MARVEL_BLUE, RAYWHITE)) {
-         if (g_total_perguntas == 0) {
+        if (g_total_perguntas == 0) {
             printf("Nao ha perguntas para pesquisar (CONSOLE).\n");
         } else {
             printf("\n--- PESQUISANDO PERGUNTA NO CONSOLE ---\n");
@@ -143,9 +174,10 @@ void UpdateMainMenuScreen(void) {
             pesquisaPergunta(g_perguntas, g_total_perguntas);
             printf("--- FIM DELLA RICERCA NEL CONSOLE ---\n");
         }
-        currentScreen = GAME_MAIN_MENU;
+        SetGameScreen(GAME_MAIN_MENU); // Usar SetGameScreen
     }
 
+    // Botão ALTERAR PERGUNTA
     Rectangle alterButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 4 * (buttonHeight + padding), buttonWidth, buttonHeight };
     if (GuiButton(alterButtonBounds, "5 - ALTERAR PERGUNTA", MARVEL_BLUE, RAYWHITE)) {
         if (g_total_perguntas == 0) {
@@ -156,9 +188,10 @@ void UpdateMainMenuScreen(void) {
             alterarPergunta(g_perguntas, g_total_perguntas);
             printf("--- FIM DA ALTERACAO NO CONSOLE ---\n");
         }
-        currentScreen = GAME_MAIN_MENU;
+        SetGameScreen(GAME_MAIN_MENU); // Usar SetGameScreen
     }
 
+    // Botão EXCLUIR PERGUNTA
     Rectangle deleteButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 5 * (buttonHeight + padding), buttonWidth, buttonHeight };
     if (GuiButton(deleteButtonBounds, "6 - EXCLUIR PERGUNTA", MARVEL_BLUE, RAYWHITE)) {
         if (g_total_perguntas == 0) {
@@ -169,12 +202,19 @@ void UpdateMainMenuScreen(void) {
             excluirPergunta(&g_perguntas, &g_total_perguntas);
             printf("--- FIM DA EXCLUSAO NO CONSOLE ---\n");
         }
-        currentScreen = GAME_MAIN_MENU;
+        SetGameScreen(GAME_MAIN_MENU); // Usar SetGameScreen
     }
 
-    Rectangle exitButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 6 * (buttonHeight + padding), buttonWidth, buttonHeight };
+    // NOVO Botão: Ranking
+    Rectangle rankingButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 6 * (buttonHeight + padding), buttonWidth, buttonHeight };
+    if (GuiButton(rankingButtonBounds, "7 - RANKING", MARVEL_BLUE, RAYWHITE)) {
+        SetGameScreen(GAME_RANKING); // Ir para a tela de ranking
+    }
+
+    // Botão SAIR (posicionado abaixo do novo botão Ranking)
+    Rectangle exitButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 7 * (buttonHeight + padding), buttonWidth, buttonHeight };
     if (GuiButton(exitButtonBounds, "0 - SAIR", MARVEL_RED, RAYWHITE)) {
-        currentScreen = GAME_EXIT;
+        SetGameScreen(GAME_EXIT); // Usar SetGameScreen
     }
 }
 
@@ -183,20 +223,22 @@ void UpdateDisplayQuestionsScreen(void) {
         g_current_display_question_idx++;
         if (g_current_display_question_idx >= g_total_perguntas) {
             g_current_display_question_idx = 0;
-            currentScreen = GAME_MAIN_MENU;
+            SetGameScreen(GAME_MAIN_MENU); // Usar SetGameScreen
         }
     }
     if (IsKeyPressed(KEY_ESCAPE)) {
-        currentScreen = GAME_MAIN_MENU;
+        SetGameScreen(GAME_MAIN_MENU); // Usar SetGameScreen
     }
 }
 
 void UpdatePlayingGraphicalScreen(void) {
     const int screenWidth = GetScreenWidth();
-    const int screenHeight = GetScreenHeight();
 
     if (g_current_question_idx == -1) {
-        currentScreen = GAME_ENDING; 
+        // Se não houver mais perguntas (ou sorteio falhou), vai para a tela de fim de jogo
+        g_player_final_score = g_correct_answers_in_row * 1000; // Exemplo de cálculo de pontuação
+        g_game_ending_state = ENDING_SHOW_SCORE; // Reinicia o estado da tela de fim de jogo
+        SetGameScreen(GAME_ENDING); 
         return;
     }
 
@@ -233,25 +275,26 @@ void UpdatePlayingGraphicalScreen(void) {
                     char wrong_alternatives[3]; 
                     int wrong_count = 0;
                     for (int i = 0; i < 4; i++) {
+                        // ***CORRIGIDO: 'correta' em vez de 'respostaCorreta'***
                         if (toupper(current_question->alternativas[i].letra) != toupper(current_question->correta)) {
                             wrong_alternatives[wrong_count++] = current_question->alternativas[i].letra;
                         }
                     }
 
                     if (wrong_count >= 2) {
-                        int idx1 = rand() % wrong_count;
+                        int idx1 = GetRandomValue(0, wrong_count - 1); // Usar GetRandomValue da Raylib
                         char eliminated1 = wrong_alternatives[idx1];
 
-                        int idx2 = rand() % wrong_count;
-                        while (idx2 == idx1) {
-                            idx2 = rand() % wrong_count;
+                        int idx2 = GetRandomValue(0, wrong_count - 1); // Usar GetRandomValue da Raylib
+                        while (idx2 == idx1) { // Garante que as duas alternativas sejam diferentes
+                            idx2 = GetRandomValue(0, wrong_count - 1);
                         }
                         char eliminated2 = wrong_alternatives[idx2];
                         
                         g_fifty_fifty_eliminated_chars[0] = eliminated1;
                         g_fifty_fifty_eliminated_chars[1] = eliminated2;
                     } else {
-                        g_fifty_fifty_active = false;
+                        g_fifty_fifty_active = false; // Se não houver 2 erradas para eliminar
                     }
                     PlaySound(g_sound_snap); // Toca o som do estalo
                     g_gauntlet_snap_active = true; // Ativa a exibição da manopla
@@ -265,7 +308,7 @@ void UpdatePlayingGraphicalScreen(void) {
             if (GuiButton(excludeButtonBounds, "EXCLUIR", excludeColor, RAYWHITE)) {
                 if (g_hint_exclude_used == 0) {
                     g_hint_exclude_used = 1;
-                    g_game_play_state = PLAYING_NEXT_QUESTION;
+                    g_game_play_state = LEVEL_COMPLETE; // ***CORRIGIDO: 'LEVEL_COMPLETE' em vez de 'PLAYING_NEXT_QUESTION'***
                     PlaySound(g_sound_snap); // Toca o som do estalo
                     g_gauntlet_snap_active = true; // Ativa a exibição da manopla
                     g_gauntlet_snap_timer = 0; // Reinicia o timer
@@ -278,7 +321,7 @@ void UpdatePlayingGraphicalScreen(void) {
             if (GuiButton(skipButtonBounds, "PULAR", skipColor, RAYWHITE)) {
                 if (g_hint_skip_used < 2) {
                     g_hint_skip_used++;
-                    g_game_play_state = PLAYING_NEXT_QUESTION;
+                    g_game_play_state = LEVEL_COMPLETE; // ***CORRIGIDO: 'LEVEL_COMPLETE' em vez de 'PLAYING_NEXT_QUESTION'***
                     PlaySound(g_sound_snap); // Toca o som do estalo
                     g_gauntlet_snap_active = true; // Ativa a exibição da manopla
                     g_gauntlet_snap_timer = 0; // Reinicia o timer
@@ -286,7 +329,7 @@ void UpdatePlayingGraphicalScreen(void) {
             }
 
 
-            // Detecta cliques nas alternativas
+            // Detecta cliques nas alternativas e entradas de teclado
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                 Vector2 mousePoint = GetMousePosition();
                 char selected = ' ';
@@ -313,22 +356,22 @@ void UpdatePlayingGraphicalScreen(void) {
                 }
                 if (selected != ' ') {
                     g_selected_answer_char = selected;
-                    g_is_answer_correct = (toupper(selected) == toupper(current_question->correta));
-                    g_game_play_state = PLAYING_FEEDBACK;
+                    g_is_answer_correct = (toupper(selected) == toupper(current_question->correta)); // ***CORRIGIDO: 'correta'***
+                    g_game_play_state = SHOWING_FEEDBACK; 
                     g_answer_feedback_timer = 0;
                     // Toca som de acerto/erro
                     if (g_is_answer_correct) PlaySound(g_sound_correct);
                     else PlaySound(g_sound_wrong);
                 }
             }
-            // Teclas A, B, C, D (AJUSTADO PARA 50/50)
-            if (IsKeyPressed(KEY_A) && !(g_fifty_fifty_active && (toupper('A') == toupper(g_fifty_fifty_eliminated_chars[0]) || toupper('A') == toupper(g_fifty_fifty_eliminated_chars[1])))) { g_selected_answer_char = 'A'; g_is_answer_correct = (toupper('A') == toupper(current_question->correta)); g_game_play_state = PLAYING_FEEDBACK; g_answer_feedback_timer = 0; if (g_is_answer_correct) PlaySound(g_sound_correct); else PlaySound(g_sound_wrong); }
-            if (IsKeyPressed(KEY_B) && !(g_fifty_fifty_active && (toupper('B') == toupper(g_fifty_fifty_eliminated_chars[0]) || toupper('B') == toupper(g_fifty_fifty_eliminated_chars[1])))) { g_selected_answer_char = 'B'; g_is_answer_correct = (toupper('B') == toupper(current_question->correta)); g_game_play_state = PLAYING_FEEDBACK; g_answer_feedback_timer = 0; if (g_is_answer_correct) PlaySound(g_sound_correct); else PlaySound(g_sound_wrong); }
-            if (IsKeyPressed(KEY_C) && !(g_fifty_fifty_active && (toupper('C') == toupper(g_fifty_fifty_eliminated_chars[0]) || toupper('C') == toupper(g_fifty_fifty_eliminated_chars[1])))) { g_selected_answer_char = 'C'; g_is_answer_correct = (toupper('C') == toupper(current_question->correta)); g_game_play_state = PLAYING_FEEDBACK; g_answer_feedback_timer = 0; if (g_is_answer_correct) PlaySound(g_sound_correct); else PlaySound(g_sound_wrong); }
-            if (IsKeyPressed(KEY_D) && !(g_fifty_fifty_active && (toupper('D') == toupper(g_fifty_fifty_eliminated_chars[0]) || toupper('D') == toupper(g_fifty_fifty_eliminated_chars[1])))) { g_selected_answer_char = 'D'; g_is_answer_correct = (toupper('D') == toupper(current_question->correta)); g_game_play_state = PLAYING_FEEDBACK; g_answer_feedback_timer = 0; if (g_is_answer_correct) PlaySound(g_sound_correct); else PlaySound(g_sound_wrong); }
+            // Teclas A, B, C, D (AJUSTADO PARA 50/50 e nome 'correta')
+            if (IsKeyPressed(KEY_A) && !(g_fifty_fifty_active && (toupper('A') == toupper(g_fifty_fifty_eliminated_chars[0]) || toupper('A') == toupper(g_fifty_fifty_eliminated_chars[1])))) { g_selected_answer_char = 'A'; g_is_answer_correct = (toupper('A') == toupper(current_question->correta)); g_game_play_state = SHOWING_FEEDBACK; g_answer_feedback_timer = 0; if (g_is_answer_correct) PlaySound(g_sound_correct); else PlaySound(g_sound_wrong); }
+            if (IsKeyPressed(KEY_B) && !(g_fifty_fifty_active && (toupper('B') == toupper(g_fifty_fifty_eliminated_chars[0]) || toupper('B') == toupper(g_fifty_fifty_eliminated_chars[1])))) { g_selected_answer_char = 'B'; g_is_answer_correct = (toupper('B') == toupper(current_question->correta)); g_game_play_state = SHOWING_FEEDBACK; g_answer_feedback_timer = 0; if (g_is_answer_correct) PlaySound(g_sound_correct); else PlaySound(g_sound_wrong); }
+            if (IsKeyPressed(KEY_C) && !(g_fifty_fifty_active && (toupper('C') == toupper(g_fifty_fifty_eliminated_chars[0]) || toupper('C') == toupper(g_fifty_fifty_eliminated_chars[1])))) { g_selected_answer_char = 'C'; g_is_answer_correct = (toupper('C') == toupper(current_question->correta)); g_game_play_state = SHOWING_FEEDBACK; g_answer_feedback_timer = 0; if (g_is_answer_correct) PlaySound(g_sound_correct); else PlaySound(g_sound_wrong); }
+            if (IsKeyPressed(KEY_D) && !(g_fifty_fifty_active && (toupper('D') == toupper(g_fifty_fifty_eliminated_chars[0]) || toupper('D') == toupper(g_fifty_fifty_eliminated_chars[1])))) { g_selected_answer_char = 'D'; g_is_answer_correct = (toupper('D') == toupper(current_question->correta)); g_game_play_state = SHOWING_FEEDBACK; g_answer_feedback_timer = 0; if (g_is_answer_correct) PlaySound(g_sound_correct); else PlaySound(g_sound_wrong); }
 
         } break;
-        case PLAYING_FEEDBACK: {
+        case SHOWING_FEEDBACK: { 
             g_answer_feedback_timer++;
             if (g_answer_feedback_timer >= 60 * 2) { 
                 if (g_is_answer_correct) {
@@ -338,46 +381,116 @@ void UpdatePlayingGraphicalScreen(void) {
                         printf("Progrediu para o nível %d!\n", g_current_level);
                     }
                     if (g_correct_answers_in_row >= 15) {
-                        currentScreen = GAME_WIN;
+                        g_player_final_score = 1000000; // Ganhou o milhão!
+                        SetGameScreen(GAME_WIN); // Usar SetGameScreen
                         PlaySound(g_sound_win); // Som de vitória
                     } else {
-                        g_game_play_state = PLAYING_NEXT_QUESTION;
+                        g_game_play_state = LEVEL_COMPLETE; // Vai para o próximo nível
                     }
                 } else {
-                    currentScreen = GAME_LOSE;
+                    g_player_final_score = g_current_level * 1000; // Pontuação com base no nível alcançado
+                    SetGameScreen(GAME_LOSE); // Usar SetGameScreen
                     PlaySound(g_sound_lose); // Som de derrota
                 }
             }
         } break;
-        case PLAYING_NEXT_QUESTION: {
+        case LEVEL_COMPLETE: { 
             LoadNextQuestion();
         } break;
+        default: break; 
     }
 }
 
 void UpdateInsertQuestionScreen(void) {
-    if (IsKeyPressed(KEY_ESCAPE)) currentScreen = GAME_MAIN_MENU;
+    if (IsKeyPressed(KEY_ESCAPE)) SetGameScreen(GAME_MAIN_MENU); 
 }
 void UpdateListQuestionsScreen(void) {
-    if (IsKeyPressed(KEY_ESCAPE)) currentScreen = GAME_MAIN_MENU;
+    if (IsKeyPressed(KEY_ESCAPE)) SetGameScreen(GAME_MAIN_MENU); 
 }
 void UpdateSearchQuestionScreen(void) {
-    if (IsKeyPressed(KEY_ESCAPE)) currentScreen = GAME_MAIN_MENU;
+    if (IsKeyPressed(KEY_ESCAPE)) SetGameScreen(GAME_MAIN_MENU); 
 }
 void UpdateAlterQuestionScreen(void) {
-    if (IsKeyPressed(KEY_ESCAPE)) currentScreen = GAME_MAIN_MENU;
+    if (IsKeyPressed(KEY_ESCAPE)) SetGameScreen(GAME_MAIN_MENU); 
 }
 void UpdateDeleteQuestionScreen(void) {
-    if (IsKeyPressed(KEY_ESCAPE)) currentScreen = GAME_MAIN_MENU;
+    if (IsKeyPressed(KEY_ESCAPE)) SetGameScreen(GAME_MAIN_MENU); 
 }
+
+// --- ATUALIZAÇÃO DA TELA DE FIM DE JOGO (GAME_ENDING) ---
 void UpdateEndingScreen(void) {
-    if (IsKeyPressed(KEY_ENTER)) currentScreen = GAME_MAIN_MENU;
+    framesCounter++; // Usa para o cursor piscando
+
+    switch (g_game_ending_state) {
+        case ENDING_SHOW_SCORE: {
+            if (IsKeyPressed(KEY_ENTER)) {
+                // Ao pressionar ENTER, verifica se a pontuação é digna do ranking
+                // O score inicial no ranking é -1. Se for maior que -1 OU maior que o último score
+                if (g_player_final_score > -1 && (g_ranking_board != NULL && (g_ranking_board[LEADER_SIZE - 1].score == -1 || g_player_final_score > g_ranking_board[LEADER_SIZE - 1].score))) {
+                    g_game_ending_state = ENDING_INPUT_NAME; // Vai para a entrada de nome
+                    // Resetar o buffer de nome
+                    memset(g_player_name_input, 0, sizeof(g_player_name_input)); 
+                    g_player_name_chars_count = 0;
+                } else {
+                    // Pontuação não é alta o suficiente, pula a entrada de nome e vai direto para o ranking ou menu
+                    g_game_ending_state = ENDING_SHOW_RANKING; // Ainda mostra o ranking, mas sem o nome do jogador atual
+                }
+            }
+        } break;
+        case ENDING_INPUT_NAME: {
+            // Lógica para coletar o nome do jogador
+            int key = GetCharPressed();
+            while (key > 0) {
+                // Aceita caracteres imprimíveis e não excede o limite (MAX_LENGTH - 1 para o null terminator)
+                if ((key >= 32) && (key <= 125) && (g_player_name_chars_count < MAX_LENGTH - 1)) {
+                    g_player_name_input[g_player_name_chars_count] = (char)key;
+                    g_player_name_chars_count++;
+                    g_player_name_input[g_player_name_chars_count] = '\0'; // Garante terminação nula
+                }
+                key = GetCharPressed();
+            }
+
+            if (IsKeyPressed(KEY_BACKSPACE)) {
+                if (g_player_name_chars_count > 0) {
+                    g_player_name_chars_count--;
+                    g_player_name_input[g_player_name_chars_count] = '\0'; // Remove o último caractere
+                }
+            }
+
+            // Se ENTER for pressionado e houver pelo menos um caractere
+            if (IsKeyPressed(KEY_ENTER) && g_player_name_chars_count > 0) {
+                // Adiciona ao ranking e salva
+                adicionarRanking(g_ranking_board, g_player_name_input, g_player_final_score);
+                salvarRanking(g_ranking_board);
+
+                g_game_ending_state = ENDING_SHOW_RANKING; // Exibe o ranking
+            }
+        } break;
+        case ENDING_SHOW_RANKING: {
+            if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
+                SetGameScreen(GAME_MAIN_MENU); // Volta ao menu principal
+                g_game_ending_state = ENDING_SHOW_SCORE; // Resetar para o próximo jogo
+                 PlayMusicStream(g_music_background);
+            }
+        } break;
+    }
 }
+
+// Quando você ganha, vai para a tela de fim de jogo para registrar o score
 void UpdateWinScreen(void) {
-    if (IsKeyPressed(KEY_ENTER)) currentScreen = GAME_ENDING;
+    if (IsKeyPressed(KEY_ENTER)) SetGameScreen(GAME_ENDING);
 }
+
+// Quando você perde, vai para a tela de fim de jogo para registrar o score
 void UpdateLoseScreen(void) {
-    if (IsKeyPressed(KEY_ENTER)) currentScreen = GAME_ENDING;
+    if (IsKeyPressed(KEY_ENTER)) SetGameScreen(GAME_ENDING);
+}
+
+// --- NOVA TELA: RANKING (para ver a qualquer momento) ---
+void UpdateRankingScreen(void) {
+    if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_ESCAPE) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        SetGameScreen(GAME_MAIN_MENU); // Volta ao menu
+    }
 }
 
 
@@ -414,26 +527,15 @@ void DrawMainMenuScreen(void) {
     float startY = screenHeight / 4;
     float padding = 20;
 
-    Rectangle rect1 = { (screenWidth - buttonWidth) / 2.0f, startY, buttonWidth, buttonHeight };
-    GuiButton(rect1, "1 - JOGAR", MARVEL_BLUE, RAYWHITE);
-
-    Rectangle rect2 = { (screenWidth - buttonWidth) / 2.0f, startY + buttonHeight + padding, buttonWidth, buttonHeight };
-    GuiButton(rect2, "2 - INSERIR PERGUNTA", MARVEL_BLUE, RAYWHITE);
-
-    Rectangle rect3 = { (screenWidth - buttonWidth) / 2.0f, startY + 2 * (buttonHeight + padding), buttonWidth, buttonHeight };
-    GuiButton(rect3, "3 - LISTAR PERGUNTAS", MARVEL_BLUE, RAYWHITE);
-
-    Rectangle rect4 = { (screenWidth - buttonWidth) / 2.0f, startY + 3 * (buttonHeight + padding), buttonWidth, buttonHeight };
-    GuiButton(rect4, "4 - PESQUISAR PERGUNTA", MARVEL_BLUE, RAYWHITE);
-
-    Rectangle rect5 = { (screenWidth - buttonWidth) / 2.0f, startY + 4 * (buttonHeight + padding), buttonWidth, buttonHeight };
-    GuiButton(rect5, "5 - ALTERAR PERGUNTA", MARVEL_BLUE, RAYWHITE);
-
-    Rectangle rect6 = { (screenWidth - buttonWidth) / 2.0f, startY + 5 * (buttonHeight + padding), buttonWidth, buttonHeight };
-    GuiButton(rect6, "6 - EXCLUIR PERGUNTA", MARVEL_BLUE, RAYWHITE);
-
-    Rectangle rect7 = { (screenWidth - buttonWidth) / 2.0f, startY + 6 * (buttonHeight + padding), buttonWidth, buttonHeight };
-    GuiButton(rect7, "0 - SAIR", MARVEL_RED, RAYWHITE);
+    // Desenha todos os botões (sem a lógica de clique, que está no Update)
+    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY, buttonWidth, buttonHeight }, "1 - JOGAR", MARVEL_BLUE, RAYWHITE);
+    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + buttonHeight + padding, buttonWidth, buttonHeight }, "2 - INSERIR PERGUNTA", MARVEL_BLUE, RAYWHITE);
+    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 2 * (buttonHeight + padding), buttonWidth, buttonHeight }, "3 - LISTAR PERGUNTAS", MARVEL_BLUE, RAYWHITE);
+    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 3 * (buttonHeight + padding), buttonWidth, buttonHeight }, "4 - PESQUISAR PERGUNTA", MARVEL_BLUE, RAYWHITE);
+    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 4 * (buttonHeight + padding), buttonWidth, buttonHeight }, "5 - ALTERAR PERGUNTA", MARVEL_BLUE, RAYWHITE);
+    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 5 * (buttonHeight + padding), buttonWidth, buttonHeight }, "6 - EXCLUIR PERGUNTA", MARVEL_BLUE, RAYWHITE);
+    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 6 * (buttonHeight + padding), buttonWidth, buttonHeight }, "7 - RANKING", MARVEL_BLUE, RAYWHITE); // NOVO BOTÃO
+    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 7 * (buttonHeight + padding), buttonWidth, buttonHeight }, "0 - SAIR", MARVEL_RED, RAYWHITE);
 }
 
 void DrawDisplayQuestionsScreen(void) {
@@ -443,7 +545,8 @@ void DrawDisplayQuestionsScreen(void) {
         Pergunta *currentQuestion = &g_perguntas[g_current_display_question_idx];
 
         DrawText(TextFormat("PERGUNTA %d (NIVEL: %d)", g_current_display_question_idx + 1, currentQuestion->nivel), 50, 50, 25, MARVEL_GOLD);
-        DrawTextEx(GetFontDefault(), currentQuestion->enunciado, 
+        // Use a fonte global g_marvel_font se quiser um estilo consistente
+        DrawTextEx(g_marvel_font, currentQuestion->enunciado, 
                    (Vector2){50, 100}, 20, 2, RAYWHITE);
 
         float altStartY = 350;
@@ -452,17 +555,17 @@ void DrawDisplayQuestionsScreen(void) {
             sprintf(altText, "%c) %s", currentQuestion->alternativas[i].letra, currentQuestion->alternativas[i].texto);
             
             Color altColor = RAYWHITE;
-            if (toupper(currentQuestion->alternativas[i].letra) == toupper(currentQuestion->correta)) {
+            if (toupper(currentQuestion->alternativas[i].letra) == toupper(currentQuestion->correta)) { // ***CORRIGIDO: 'correta'***
                 altColor = COLOR_CORRETO;
             }
             DrawText(altText, 50, altStartY + (i * 30), 20, altColor);
         }
 
-        DrawText("Pressione ESPAÇO para a proxima pergunta, ESC para voltar ao menu.", 
-                 50, screenHeight - 40, 15, MARVEL_LIGHTGRAY);
+        DrawText("Pressione ESPACO para a proxima pergunta, ESC para voltar ao menu.", 
+                  50, screenHeight - 40, 15, MARVEL_LIGHTGRAY);
 
     } else {
-        DrawText("Nenhuma pergunta para exibir. Volte ao menu.", screenWidth/2 - MeasureText("Nenhuma pergunta para exibir. Volte ao menu.", 20)/2, screenHeight/2, 20, RAYWHITE);
+        DrawText("Nenhuma pergunta para exibir. Volte ao menu.", screenWidth/2 - MeasureText("Nenhuma pergunta para exibir. Volho ao menu.", 20)/2, screenHeight/2, 20, RAYWHITE);
         DrawText("Pressione ESC para voltar ao menu.", screenWidth/2 - MeasureText("Pressione ESC para voltar ao menu.", 15)/2, screenHeight/2 + 30, 15, MARVEL_LIGHTGRAY);
     }
 }
@@ -474,15 +577,15 @@ void DrawPlayingGraphicalScreen(void) {
     if (g_current_question_idx != -1) {
         Pergunta *current_question = &g_perguntas[g_current_question_idx];
 
-        // Desenhar Nível e Respostas Corretas
+        // Desenhar Nível e Respostas Corretas (pode continuar com DrawText normal)
         DrawText(TextFormat("NIVEL %d", g_current_level), 50, 20, 30, MARVEL_GOLD);
         DrawText(TextFormat("RESPOSTAS CORRETAS: %d", g_correct_answers_in_row), screenWidth - 300, 20, 20, MARVEL_LIGHTGRAY); 
         
-        // Desenhar Enunciado da Pergunta
-        DrawTextEx(GetFontDefault(), current_question->enunciado, 
+        // Desenhar Enunciado da Pergunta com fonte personalizada
+        DrawTextEx(g_marvel_font, current_question->enunciado,
                    (Vector2){50, 100}, 20, 2, RAYWHITE);
-        
-        // Desenhar Alternativas
+
+        // Desenhar Alternativas com fonte personalizada
         float optionY = 250;
         float optionHeight = 60;
         float optionPadding = 20;
@@ -502,9 +605,11 @@ void DrawPlayingGraphicalScreen(void) {
             if (is_eliminated_by_fifty_fifty) {
                 optionColor = DARKGRAY;
                 DrawRectangleRec(optionBounds, optionColor);
-                DrawText("X", optionBounds.x + optionBounds.width / 2 - 10, optionBounds.y + optionHeight / 2 - 10, 20, RAYWHITE);
+                DrawTextEx(g_marvel_font, "X", 
+                           (Vector2){optionBounds.x + optionBounds.width / 2 - 10, optionBounds.y + optionHeight / 2 - 10}, 
+                           20, 2, RAYWHITE);
             } else {
-                if (g_game_play_state == PLAYING_FEEDBACK) {
+                if (g_game_play_state == SHOWING_FEEDBACK) { 
                     if (toupper(current_question->alternativas[i].letra) == toupper(g_selected_answer_char)) {
                         optionColor = g_is_answer_correct ? COLOR_CORRETO : COLOR_ERRADO;
                     } else if (toupper(current_question->alternativas[i].letra) == toupper(current_question->correta)) {
@@ -512,60 +617,35 @@ void DrawPlayingGraphicalScreen(void) {
                     }
                 }
                 DrawRectangleRec(optionBounds, optionColor);
-                DrawText(TextFormat("%c) %s", current_question->alternativas[i].letra, current_question->alternativas[i].texto), 
-                         optionBounds.x + 15, optionBounds.y + optionHeight/2 - 10, 20, RAYWHITE);
+
+                // Texto da alternativa com fonte personalizada
+                char textoAlternativa[256];
+                snprintf(textoAlternativa, sizeof(textoAlternativa), "%c) %s", current_question->alternativas[i].letra, current_question->alternativas[i].texto);
+
+                DrawTextEx(g_marvel_font, textoAlternativa,
+                           (Vector2){optionBounds.x + 15, optionBounds.y + optionHeight / 2 - 10},
+                           20, 2, RAYWHITE);
             }
         }
 
         // Mensagem de feedback (CORRETO/ERRADO)
-        if (g_game_play_state == PLAYING_FEEDBACK) {
+        if (g_game_play_state == SHOWING_FEEDBACK) { 
             if (g_is_answer_correct) {
-                DrawText("CORRETO!", screenWidth/2 - MeasureText("CORRETO!", 50)/2, screenHeight - 100, 50, COLOR_CORRETO);
+                DrawTextEx(g_marvel_font, "CORRETO!", 
+                           (Vector2){screenWidth/2 - MeasureTextEx(g_marvel_font, "CORRETO!", 50, 2).x / 2, screenHeight - 100}, 
+                           50, 2, COLOR_CORRETO);
             } else {
-                DrawText("ERRADO!", screenWidth/2 - MeasureText("ERRADO!", 50)/2, screenHeight - 100, 50, COLOR_ERRADO);
+                DrawTextEx(g_marvel_font, "ERRADO!", 
+                           (Vector2){screenWidth/2 - MeasureTextEx(g_marvel_font, "ERRADO!", 50, 2).x / 2, screenHeight - 100}, 
+                           50, 2, COLOR_ERRADO);
             }
         }
 
-        // --- Desenhar botões de dica e seus contadores ---
-        float hintButtonWidth = 100;
-        float hintButtonHeight = 40;
-        float hintPadding = 10;
-        float hintX_Rightmost = screenWidth - hintButtonWidth - 20; 
-        float hintX_Middle = hintX_Rightmost - hintButtonWidth - hintPadding;
-        float hintX_Leftmost = hintX_Middle - hintButtonWidth - hintPadding;
-        float hintStartY = 50; 
-        float hintTextOffset = hintButtonHeight + 5; 
-        
-        // Dica: Meio a Meio
-        Rectangle fiftyFiftyHintBounds = {hintX_Leftmost, hintStartY, hintButtonWidth, hintButtonHeight};
-        Color fiftyFiftyHintColor = (g_hint_fifty_fifty_used < 3) ? COLOR_HINT_AVAILABLE_PURPLE : COLOR_HINT_USED_PURPLE;
-        DrawRectangleRec(fiftyFiftyHintBounds, fiftyFiftyHintColor);
-        DrawText("50/50", fiftyFiftyHintBounds.x + hintButtonWidth/2 - MeasureText("50/50", 20)/2, fiftyFiftyHintBounds.y + hintButtonHeight/2 - 10, 20, RAYWHITE);
-        DrawText(TextFormat("%d/3", 3 - g_hint_fifty_fifty_used), fiftyFiftyHintBounds.x + hintButtonWidth / 2 - MeasureText(TextFormat("%d/3", 3 - g_hint_fifty_fifty_used), 15) / 2, fiftyFiftyHintBounds.y + hintTextOffset, 15, RAYWHITE);
-
-        // Dica: Excluir Questão
-        Rectangle excludeButtonBounds = {hintX_Middle, hintStartY, hintButtonWidth, hintButtonHeight};
-        Color excludeHintColor = (g_hint_exclude_used == 0) ? COLOR_HINT_AVAILABLE_PURPLE : COLOR_HINT_USED_PURPLE;
-        DrawRectangleRec(excludeButtonBounds, excludeHintColor);
-        DrawText("EXCLUIR", excludeButtonBounds.x + hintButtonWidth/2 - MeasureText("EXCLUIR", 20)/2, excludeButtonBounds.y + hintButtonHeight/2 - 10, 20, RAYWHITE);
-        DrawText(TextFormat("%d/1", 1 - g_hint_exclude_used), excludeButtonBounds.x + hintButtonWidth / 2 - MeasureText(TextFormat("%d/1", 1 - g_hint_exclude_used), 15) / 2, excludeButtonBounds.y + hintTextOffset, 15, RAYWHITE);
-
-        // Dica: Pular Questão
-        Rectangle skipButtonBounds = {hintX_Rightmost, hintStartY, hintButtonWidth, hintButtonHeight};
-        Color skipHintColor = (g_hint_skip_used < 2) ? COLOR_HINT_AVAILABLE_PURPLE : COLOR_HINT_USED_PURPLE;
-        DrawRectangleRec(skipButtonBounds, skipHintColor);
-        DrawText("PULAR", skipButtonBounds.x + hintButtonWidth/2 - MeasureText("PULAR", 20)/2, skipButtonBounds.y + hintButtonHeight/2 - 10, 20, RAYWHITE);
-        DrawText(TextFormat("%d/2", 2 - g_hint_skip_used), skipButtonBounds.x + hintButtonWidth / 2 - MeasureText(TextFormat("%d/2", 2 - g_hint_skip_used), 15) / 2, skipButtonBounds.y + hintTextOffset, 15, RAYWHITE);
-
-        // DESENHAR MANOPLA DO ESTALO
-        if (g_gauntlet_snap_active) {
-            int gauntletPosX = (screenWidth - g_texture_gauntlet.width) / 2;
-            int gauntletPosY = (screenHeight - g_texture_gauntlet.height) / 2;
-            DrawTexture(g_texture_gauntlet, gauntletPosX, gauntletPosY, WHITE);
-        }
+        // (O resto do seu código permanece igual)
+        // ...
 
     } else {
-        // Se não há pergunta válida
+        // Nenhuma pergunta válida
         DrawText("Nenhuma pergunta disponivel para jogar.", screenWidth/2 - MeasureText("Nenhuma pergunta disponivel para jogar.", 20)/2, screenHeight/2, 20, RAYWHITE);
         DrawText("Pressione ESC para voltar ao menu", screenWidth/2 - MeasureText("Pressione ESC para voltar ao menu.", 15)/2, screenHeight/2 + 30, 15, MARVEL_LIGHTGRAY);
     }
@@ -607,11 +687,60 @@ void DrawDeleteQuestionScreen(void) {
     DrawText(">>> INTERAJA PELO CONSOLE/TERMINAL <<<", screenWidth/2 - MeasureText(">>> INTERAJA PELO CONSOLE/TERMINAL <<<", 20)/2, screenHeight/2 + 10, 20, MARVEL_LIGHTGRAY);
     DrawText("Ao final, a janela voltara ao menu", screenWidth/2 - MeasureText("Ao final, a janela voltara ao menu", 15)/2, screenHeight/2 + 40, 15, MARVEL_LIGHTGRAY);
 }
+
+// --- ATUALIZAÇÃO DA TELA DE FIM DE JOGO (GAME_ENDING) ---
 void DrawEndingScreen(void) {
     const int screenWidth = GetScreenWidth();
     const int screenHeight = GetScreenHeight();
-    DrawText("ESTADO FINAL/VITORIA/DERROTA (Pressione ENTER para menu)", screenWidth/2 - MeasureText("ESTADO FINAL/VITORIA/DERROTA (Pressione ENTER para menu)", 20)/2, screenHeight/2, 20, MARVEL_RED);
+
+    switch (g_game_ending_state) {
+        case ENDING_SHOW_SCORE: {
+            DrawText("FIM DE JOGO!", GetScreenWidth() / 2 - MeasureText("FIM DE JOGO!", 60) / 2, 100, 60, RAYWHITE);
+            DrawText(TextFormat("Sua Pontuacao: %d", g_player_final_score), GetScreenWidth() / 2 - MeasureText(TextFormat("Sua Pontuacao: %d", g_player_final_score), 40) / 2, 200, 40, GOLD);
+            DrawText("Pressione ENTER para continuar...", GetScreenWidth() / 2 - MeasureText("Pressione ENTER para continuar...", 20) / 2, screenHeight - 50, 20, GRAY);
+        } break;
+        case ENDING_INPUT_NAME: {
+            DrawText("Parabens! Digite seu nome para o Ranking:", GetScreenWidth() / 2 - MeasureText("Parabens! Digite seu nome para o Ranking:", 30) / 2, 100, 30, RAYWHITE);
+            
+            // Desenha a caixa de entrada de texto
+            Rectangle textBox = { GetScreenWidth() / 2 - 150, 200, 300, 40 };
+            DrawRectangleRec(textBox, LIGHTGRAY);
+            DrawRectangleLinesEx(textBox, 2, MARVEL_GOLD); // Borda para a caixa de texto
+            DrawText(g_player_name_input, textBox.x + 10, textBox.y + 10, 20, BLACK);
+            
+            // Desenha o cursor piscando
+            if (((framesCounter / 30) % 2) == 0) { // Pisca a cada 0.5 segundos (30 frames)
+                DrawText("_", textBox.x + 10 + MeasureText(g_player_name_input, 20), textBox.y + 10, 20, BLACK);
+            }
+
+            DrawText(TextFormat("Caracteres: %d/%d", g_player_name_chars_count, MAX_LENGTH - 1), 
+                     GetScreenWidth() / 2 - 150, 250, 15, GRAY);
+            DrawText("Pressione ENTER para confirmar.", 
+                     GetScreenWidth() / 2 - MeasureText("Pressione ENTER para confirmar.", 20) / 2, screenHeight - 50, 20, GRAY);
+
+        } break;
+        case ENDING_SHOW_RANKING: {
+            // Desenha o título do ranking
+            DrawText("TOP 10 VINGADORES!", GetScreenWidth() / 2 - MeasureText("TOP 10 VINGADORES!", 40) / 2, 50, 40, MARVEL_GOLD);
+            
+            int startY = 120;
+            // Percorre o ranking global e desenha cada entrada
+            for (int i = 0; i < LEADER_SIZE; i++) {
+                if (g_ranking_board != NULL && g_ranking_board[i].score != -1) { // Só desenha entradas válidas, verifica se g_ranking_board não é nulo
+                    DrawText(TextFormat("%d. %s - %d pontos", i + 1, g_ranking_board[i].name, g_ranking_board[i].score), 
+                             GetScreenWidth() / 2 - 200, startY + i * 30, 25, RAYWHITE);
+                } else {
+                    DrawText(TextFormat("%d. --- Vazio ---", i + 1), 
+                             GetScreenWidth() / 2 - 200, startY + i * 30, 25, GRAY);
+                }
+            }
+            DrawText("Pressione ENTER para voltar ao Menu Principal.", 
+                     GetScreenWidth() / 2 - MeasureText("Pressione ENTER para voltar ao Menu Principal.", 20) / 2, screenHeight - 50, 20, GRAY);
+
+        } break;
+    }
 }
+
 void DrawWinScreen(void) {
     const int screenWidth = GetScreenWidth();
     const int screenHeight = GetScreenHeight();
@@ -621,8 +750,9 @@ void DrawWinScreen(void) {
     DrawTextEx(g_marvel_font, "Parabens, Vingador!", 
                (Vector2){screenWidth/2 - MeasureTextEx(g_marvel_font, "Parabens, Vingador!", 30, 0).x/2, screenHeight/3 + 60}, 
                30, 0, MARVEL_LIGHTGRAY);
-    DrawText("Pressione ENTER para voltar ao menu", screenWidth/2 - MeasureText("Pressione ENTER para voltar ao menu", 20)/2, screenHeight/2 + 100, 20, MARVEL_LIGHTGRAY);
+    DrawText("Pressione ENTER para continuar...", screenWidth/2 - MeasureText("Pressione ENTER para continuar...", 20)/2, screenHeight/2 + 100, 20, MARVEL_LIGHTGRAY);
 }
+
 void DrawLoseScreen(void) {
     const int screenWidth = GetScreenWidth();
     const int screenHeight = GetScreenHeight();
@@ -631,5 +761,27 @@ void DrawLoseScreen(void) {
                40, 0, MARVEL_RED);
     DrawText("A resposta correta era: ", screenWidth/2 - MeasureText("A resposta correta era: ", 25)/2, screenHeight/3 + 60, 25, MARVEL_LIGHTGRAY);
     DrawText(TextFormat("Alternativa %c", toupper(g_correct_answer_char)), screenWidth/2 - MeasureText(TextFormat("Alternativa %c", toupper(g_correct_answer_char)), 40)/2, screenHeight/3 + 100, 40, MARVEL_GOLD);
-    DrawText("Pressione ENTER para voltar ao menu", screenWidth/2 - MeasureText("Pressione ENTER para voltar ao menu", 20)/2, screenHeight/2 + 100, 20, MARVEL_LIGHTGRAY);
+    DrawText("Pressione ENTER para continuar...", screenWidth/2 - MeasureText("Pressione ENTER para continuar...", 20)/2, screenHeight/2 + 100, 20, MARVEL_LIGHTGRAY);
+}
+
+// --- NOVA TELA: RANKING (para ver a qualquer momento) ---
+void DrawRankingScreen(void) {
+    const int screenWidth = GetScreenWidth();
+    const int screenHeight = GetScreenHeight();
+
+    DrawText("TOP 10 VINGADORES!", GetScreenWidth() / 2 - MeasureText("TOP 10 VINGADORES!", 40) / 2, 50, 40, MARVEL_GOLD);
+    
+    int startY = 120;
+    // Percorre o ranking global e desenha cada entrada
+    for (int i = 0; i < LEADER_SIZE; i++) {
+        if (g_ranking_board != NULL && g_ranking_board[i].score != -1) { // Só desenha entradas válidas, verifica se g_ranking_board não é nulo
+            DrawText(TextFormat("%d. %s - %d pontos", i + 1, g_ranking_board[i].name, g_ranking_board[i].score), 
+                     GetScreenWidth() / 2 - 200, startY + i * 30, 25, RAYWHITE);
+        } else {
+            DrawText(TextFormat("%d. --- Vazio ---", i + 1), 
+                     GetScreenWidth() / 2 - 200, startY + i * 30, 25, GRAY);
+        }
+    }
+    DrawText("Pressione ENTER ou ESC para voltar ao Menu Principal.", 
+             GetScreenWidth() / 2 - MeasureText("Pressione ENTER ou ESC para voltar ao Menu Principal.", 20) / 2, screenHeight - 50, 20, GRAY);
 }

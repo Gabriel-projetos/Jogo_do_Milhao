@@ -1,6 +1,6 @@
-#include "../Headers/leitor_csv.h"
-#include "../Headers/pergunta.h"       
-#include "../Headers/funcoes_padrao.h"  
+#include "leitor_csv.h"
+#include "pergunta.h"       
+#include "funcoes_padrao.h"  
 
 
 // Função para remover espaços no início e fim de uma string

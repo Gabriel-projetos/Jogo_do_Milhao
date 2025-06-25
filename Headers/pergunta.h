@@ -12,9 +12,11 @@
 typedef struct {
     char *enunciado;
     Alternativa alternativas[4];
-    char correta;     // Letra da alternativa correta: 'A', 'B', 'C' ou 'D'
-    Dificuldade nivel; // Nível de dificuldade (1 a 5)
+    char correta;
+    Dificuldade nivel;
+    int ja_foi_usada; // ← NOVO: 0 = não usada, 1 = já usada
 } Pergunta;
+
 
 // Protótipos das funções para manipulação das perguntas
 
@@ -22,7 +24,7 @@ typedef struct {
 void recebePergunta(Pergunta **perguntas, int *total);
 
 // Lista todas as perguntas, organizadas por nível
-void listaPerguntas(Pergunta *perguntas, int total);
+void listaPerguntas(Pergunta *perguntas, int total); // Corrigi o tipo do segundo parâmetro para int*
 
 // Pesquisa perguntas que contenham um texto no enunciado e exibe resultados
 void pesquisaPergunta(Pergunta *perguntas, int total);

@@ -2,226 +2,129 @@
 #include <stdio.h> 
 #include <stdlib.h> 
 #include <ctype.h> 
-#include "../Headers/pergunta.h"
-#include "../Headers/jogo.h"
-#include "../Headers/funcoes_padrao.h"
+#include "pergunta.h"
+#include "jogo.h"
+#include "funcoes_padrao.h"
 
 /**
- * @brief Sorteia Perguntas por Nível de Dificuldade
- * * @param perguntas Array de ponteiros para Pergunta
+ * @brief Sorteia Perguntas por Nível de Dificuldade, evitando repetidas.
+ * @param perguntas Array de Pergunta
  * @param total Número total de perguntas
  * @param nivel Nível de dificuldade (1 a 5)
+ * @return Ponteiro para a Pergunta sorteada ou NULL se não encontrar
  */
 Pergunta* sorteiaPorNivel(Pergunta *perguntas, int total, int nivel) {
-    
-    //Variaveis
-    Pergunta *filtradas[total]; // VLA - C99. Cuidado com pilhas muito grandes.
-    int count = 0;
-
-    //Copia as perguntas do nível
-    for (int i = 0; i < total; i++) {
-        if ((int)perguntas[i].nivel == nivel) {
-            filtradas[count++] = &perguntas[i];
-        }//if
-    }//for
-
-    if (count == 0) return NULL;
-
-    //Sorteia a Pergunta
-    // srand((unsigned)time(NULL)); // Não chame srand() dentro de um loop, apenas uma vez no main().
-    int idx = rand() % count;
-    return filtradas[idx];
-}//sorteiaPorNivel
+    int tentativas = 0;
+    while (tentativas < 100) {
+        int idx = rand() % total;
+        if (perguntas[idx].nivel == nivel && perguntas[idx].ja_foi_usada == 0) {
+            perguntas[idx].ja_foi_usada = 1;
+            return &perguntas[idx];
+        }
+        tentativas++;
+    }
+    return NULL;
+}
 
 /**
- * brief loop interno que mantem o jogo rodando
- * * @param perguntas Array de ponteiros para Pergunta
+ * @brief Loop principal do jogo que faz a lógica de perguntas e níveis.
+ * @param perguntas Array de Pergunta
  * @param total Número total de perguntas
  */
-
 void jogoAcontece(Pergunta perguntas[], int total) {
-    //Variaveis
-    int nivel = 1, acerto = 0;
+    int nivel = 1;
+    int acertosNoNivel = 0;
     char resposta;
 
-    //Loop do Jogo
-    while(1){
-        /*====== Perguntas do Nivel Muito Facil=====*/
-        while (acerto < 2){
-            Pergunta *pergunta_sorteada = sorteiaPorNivel(perguntas, total, nivel); // Captura o retorno em uma nova variável
-            if (pergunta_sorteada == NULL) {
-                printf("Nenhuma pergunta encontrada para o nivel %d!\n", nivel);
-                return; // Encerra ou lida com a falta de perguntas
-            }
+    // Seleciona a pergunta do milhão (nível 5) antecipadamente
+    Pergunta *pergunta_milhao = NULL;
+    for (int i = 0; i < total; i++) {
+        if (perguntas[i].nivel == 5 && perguntas[i].ja_foi_usada == 0) {
+            pergunta_milhao = &perguntas[i];
+            perguntas[i].ja_foi_usada = 1;
+            break;
+        }
+    }
+    if (pergunta_milhao == NULL) {
+        printf("Erro: Nenhuma pergunta do milhão disponível.\n");
+        return;
+    }
 
-            //Mostra Pergunta
-            mostraPergunta(pergunta_sorteada);
-            printf("Digite a letra da alternativa correta: ");
-            limpaBuffer();
-            scanf(" %c", &resposta); // O espaço ignora espaços e quebras de linha
-            resposta = toupper(resposta);
-            if (resposta == pergunta_sorteada->correta) {
-                printf("\033[0;32mCorreto!\033[0m\n");
-                acerto++;
-            } else {
-                printf("\033[0;31mErrado! A resposta correta era %c.\033[0m\n", pergunta_sorteada->correta);
-                return; // Encerra o jogo se errar
-            }//if e else
-            
+    while (1) {
+        Pergunta *pergunta_sorteada = sorteiaPorNivel(perguntas, total, nivel);
+        if (pergunta_sorteada == NULL) {
+            // Não tem mais perguntas no nível atual, sobe de nível
             nivel++;
-        }//while
+            acertosNoNivel = 0;
+            if (nivel == 5) break; // Chegou no nível do milhão
+            continue;
+        }
 
-        /*====== Perguntas do Nivel Facil=====*/
-        while (acerto < 4){
-            Pergunta *pergunta_sorteada = sorteiaPorNivel(perguntas, total, nivel);
-            if (pergunta_sorteada == NULL) {
-                printf("Nenhuma pergunta encontrada para o nivel %d!\n", nivel);
-                return;
+        mostraPergunta(pergunta_sorteada);
+        printf("Digite a letra da alternativa correta: ");
+        limpaBuffer();
+        scanf(" %c", &resposta);
+        resposta = toupper(resposta);
+
+        if (resposta == pergunta_sorteada->correta) {
+            printf("\033[0;32mCorreto!\033[0m\n");
+            acertosNoNivel++;
+            if (acertosNoNivel == 3) {
+                nivel++;
+                acertosNoNivel = 0;
+                if (nivel == 5) break; // Chegou no nível do milhão
             }
+        } else {
+            printf("\033[0;31mErrado! A resposta correta era %c.\033[0m\n", pergunta_sorteada->correta);
+            return; // encerra o jogo ao errar
+        }
+    }
 
-            //Mostra Pergunta
-            mostraPergunta(pergunta_sorteada);
-            printf("Digite a letra da alternativa correta: ");
-            limpaBuffer();
-            scanf(" %c", &resposta); // O espaço ignora espaços e quebras de linha
-            resposta = toupper(resposta);
-            if (resposta == pergunta_sorteada->correta) {
-                printf("\033[0;32mCorreto!\033[0m\n");
-                acerto++;
-            } else {
-                printf("\033[0;31mErrado! A resposta correta era %c.\033[0m\n", pergunta_sorteada->correta);
-                return; // Encerra o jogo se errar
-            }//if e else
-            
-            nivel++;
-        }//while
-
-        /*====== Perguntas do Nivel Medio=====*/
-        while (acerto < 8){
-            Pergunta *pergunta_sorteada = sorteiaPorNivel(perguntas, total, nivel);
-            if (pergunta_sorteada == NULL) {
-                printf("Nenhuma pergunta encontrada para o nivel %d!\n", nivel);
-                return;
-            }
-
-            //Mostra Pergunta
-            mostraPergunta(pergunta_sorteada);
-            printf("Digite a letra da alternativa correta: ");
-            limpaBuffer();
-            scanf(" %c", &resposta); // O espaço ignora espaços e quebras de linha
-            resposta = toupper(resposta);
-            if (resposta == pergunta_sorteada->correta) {
-                printf("\033[0;32mCorreto!\033[0m\n");
-                acerto++;
-            } else {
-                printf("\033[0;31mErrado! A resposta correta era %c.\033[0m\n", pergunta_sorteada->correta);
-                return; // Encerra o jogo se errar
-            }//if e else
-
-            nivel++;
-        }//while
-
-        /*====== Perguntas do Nivel Dificil=====*/
-        while (acerto < 12){
-            Pergunta *pergunta_sorteada = sorteiaPorNivel(perguntas, total, nivel);
-            if (pergunta_sorteada == NULL) {
-                printf("Nenhuma pergunta encontrada para o nivel %d!\n", nivel);
-                return;
-            }
-
-            //Mostra Pergunta
-            mostraPergunta(pergunta_sorteada);
-            printf("Digite a letra da alternativa correta: ");
-            limpaBuffer();
-            scanf(" %c", &resposta); // O espaço ignora espaços e quebras de linha
-            resposta = toupper(resposta);
-            if (resposta == pergunta_sorteada->correta) {
-                printf("\033[0;32mCorreto!\033[0m\n");
-                acerto++;
-            } else {
-                printf("\033[0;31mErrado! A resposta correta era %c.\033[0m\n", pergunta_sorteada->correta);
-                return; // Encerra o jogo se errar
-            }//if e else
-
-            nivel++;
-        }//while
-
-        /*====== Perguntas do Nivel Muito Dificil=====*/
-        while (acerto < 16){
-            Pergunta *pergunta_sorteada = sorteiaPorNivel(perguntas, total, nivel);
-            if (pergunta_sorteada == NULL) {
-                printf("Nenhuma pergunta encontrada para o nivel %d!\n", nivel);
-                return;
-            }
-            
-            if (acerto == 15){
-                perguntaDoMilhao(pergunta_sorteada); // Passa o ponteiro para a pergunta sorteada
-                return;
-            }//if
-
-            //Mostra Pergunta
-            mostraPergunta(pergunta_sorteada);
-            printf("Digite a letra da alternativa correta: ");
-            limpaBuffer();
-            scanf(" %c", &resposta); // O espaço ignora espaços e quebras de linha
-            resposta = toupper(resposta);
-            if (resposta == pergunta_sorteada->correta) {
-                printf("\033[0;32mCorreto!\033[0m\n");
-                acerto++;
-            } else {
-                printf("\033[0;31mErrado! A resposta correta era %c.\033[0m\n", pergunta_sorteada->correta);
-                return; // Encerra o jogo se errar
-            }//if e else
-            
-            nivel++;
-        }//while
-    }//while
-}//jogoAcontece
-
+    // Pergunta do Milhão
+    perguntaDoMilhao(pergunta_milhao);
+}
 
 /**
- * @brief Função que exibe a pergunta do Milhão 
- * @param perguntas Ponteiro para a Pergunta do Milhão
+ * @brief Exibe a pergunta do milhão e trata resposta final
+ * @param pergunta_do_milhao Ponteiro para a pergunta do milhão
  */
-void perguntaDoMilhao(Pergunta *pergunta_do_milhao) { // Alterado o parâmetro para Pergunta*
-    //Variaveis
+void perguntaDoMilhao(Pergunta *pergunta_do_milhao) {
     char resposta;
-
-    //Mostra Pergunta
     printf("\033[1;33mParabéns! Você chegou à pergunta do milhão!\033[0m\n");
-    mostraPergunta(pergunta_do_milhao); // Usa o ponteiro passado
+    mostraPergunta(pergunta_do_milhao);
     printf("Digite a letra da alternativa correta: ");
     limpaBuffer();
-    scanf(" %c", &resposta); // O espaço ignora espaços e quebras de linha
+    scanf(" %c", &resposta);
     resposta = toupper(resposta);
-    
+
     if (resposta == pergunta_do_milhao->correta) {
         printf("\033[1;32mParabéns! Você ganhou o jogo!\033[0m\n");
     } else {
         printf("\033[1;31mErrado! A resposta correta era %c.\033[0m\n", pergunta_do_milhao->correta);
-    }//if e else
-} //perguntaDoMilhao
+    }
+}
 
 /**
- * @brief Função que libera todas as perguntas alocadas e encerra o jogo
- * @param perguntas Array de ponteiros para Pergunta
+ * @brief Libera memória alocada para perguntas e alternativas
+ * @param perguntas Array de Pergunta
  * @param total_perguntas Número total de perguntas para liberar
  */
-void liberaRecursos(Pergunta *perguntas, int total_perguntas) { // Corrigido para 2 parâmetros
-    for (int i = 0; i < total_perguntas; i++) { // Loop correto usando total_perguntas
-        if (perguntas[i].enunciado != NULL) { // Verifica se não é NULL antes de liberar
+void liberaRecursos(Pergunta *perguntas, int total_perguntas) {
+    for (int i = 0; i < total_perguntas; i++) {
+        if (perguntas[i].enunciado != NULL) {
             free(perguntas[i].enunciado);
             perguntas[i].enunciado = NULL;
         }
         for (int j = 0; j < 4; j++) {
-            if (perguntas[i].alternativas[j].texto != NULL) { // Verifica se não é NULL
+            if (perguntas[i].alternativas[j].texto != NULL) {
                 free(perguntas[i].alternativas[j].texto);
                 perguntas[i].alternativas[j].texto = NULL;
             }
         }
     }
-    if (perguntas != NULL) { // Verifica se o array de perguntas não é NULL antes de liberar
+    if (perguntas != NULL) {
         free(perguntas);
         perguntas = NULL;
     }
-} //liberaRecursos
+}
+
