@@ -1,18 +1,29 @@
+// main.c - O Coração do Jogo do Milhão Marvel (Modularizado com Todos os Sons ATIVOS)
+// Contém a inicialização da Raylib, o loop principal e a chamada das telas.
+
 #include "raylib.h"    // Biblioteca Raylib
 #include <stdio.h>     // Para printf (debug no console)
 #include <stdlib.h>    // Para exit, srand, rand
+#include <string.h>    // Para funções de string
 #include <time.h>      // Para time() para srand
-#include "telas_jogo.h" // Inclui o cabeçalho das telas modularizado
+#include <ctype.h>     // Para toupper
+
+// Inclui o cabeçalho das telas, que agora contém as definições de GameScreen e os protótipos das funções de tela.
+#include "Headers/telas_jogo.h" 
+
+// Inclua os cabeçalhos das suas outras funcionalidades que o main.c chama diretamente no início.
 #include "Headers/leitor_csv.h"     // Para carregaPerguntasDeCSV
 #include "Headers/funcoes_padrao.h" // Para liberaRecursos
 
-// --- Variáveis Globais (Definições) ---
+// --- Variáveis Globais (Definições REAIS) ---
+// Estas são as definições onde a memória é alocada e os valores iniciais são dados.
+// Elas são declaradas como 'extern' em Headers/telas_jogo.h
 Pergunta *g_perguntas = NULL;
 int g_total_perguntas = 0;
 int g_current_display_question_idx = 0; 
 GameScreen currentScreen = GAME_LOGO; // Começa na tela de LOGO
 
-// --- Variáveis de ESTADO DO JOGO PRINCIPAL --- 
+// Variáveis de ESTADO DO JOGO PRINCIPAL (GAME_PLAYING_GRAPHICAL)
 int g_current_level = 1;         
 int g_correct_answers_in_row = 0;
 int g_current_question_idx = -1;
@@ -21,23 +32,33 @@ int g_answer_feedback_timer = 0;
 bool g_is_answer_correct = false;
 char g_selected_answer_char = ' ';
 char g_correct_answer_char = ' ';
+
 int framesCounter = 0;
 Font g_marvel_font; // Variável global para a fonte personalizada
 
-// --- VARIÁVEIS GLOBAIS PARA SONS --- (Definições - mantenham comentadas enquanto não tem os arquivos .mp3/.wav carregados)
-//Music g_music_background = {0}; // Inicialize com {0}
-//Sound g_sound_correct = {0};    // Inicialize com {0}
-//Sound g_sound_wrong = {0};      // Inicialize com {0}
-//Sound g_sound_win = {0};        // Inicialize com {0}
-//Sound g_sound_lose = {0};       // Inicialize com {0}
-//Sound g_sound_menu_click = {0}; // Inicialize com {0}
+// VARIÁVEIS GLOBAIS PARA SONS (Definições e Inicialização AGORA ATIVAS)
+// CERTIFIQUE-SE DE QUE ESTES ARQUIVOS EXISTEM NOS CAMINHOS ESPECIFICADOS EM SEU PROJETO!
+Music g_music_background = {0}; 
+Sound g_sound_correct = {0};    
+Sound g_sound_wrong = {0};      
+Sound g_sound_win = {0};        
+Sound g_sound_lose = {0};       
+Sound g_sound_menu_click = {0}; 
 
-// --- NOVAS VARIÁVEIS PARA AS DICAS ---
-int g_hint_exclude_used = 0;     // Contagem de uso da dica "Excluir Questão" (max 1 por partida)
-int g_hint_skip_used = 0;        // Contagem de uso da dica "Pular Questão" (max 2 por partida)
-int g_hint_fifty_fifty_used = 0; // Contagem de uso da dica "Meio a Meio" (max 3 por partida)
-bool g_fifty_fifty_active = false; // Flag para saber se a dica Meio a Meio está ativa para a pergunta atual
-char g_fifty_fifty_eliminated_chars[2] = {0, 0}; // Guarda as letras das alternativas eliminadas pela dica 50/50
+// NOVAS VARIÁVEIS PARA AS DICAS (Definições e Inicialização)
+int g_hint_exclude_used = 0;     
+int g_hint_skip_used = 0;        
+int g_hint_fifty_fifty_used = 0; 
+
+bool g_fifty_fifty_active = false; 
+char g_fifty_fifty_eliminated_chars[2] = {0, 0}; 
+
+// VARIÁVEIS GLOBAIS PARA A MANOPLA DO ESTALO (Definições)
+Texture2D g_texture_gauntlet; 
+Sound g_sound_snap;           
+bool g_gauntlet_snap_active = false; 
+int g_gauntlet_snap_timer = 0;       
+
 
 // --- FUNÇÃO main() DO PROGRAMA ---
 int main(void) {
@@ -52,12 +73,11 @@ int main(void) {
     int monitorHeight = GetMonitorHeight(0);
     int windowPosX = (monitorWidth - screenWidth) / 2;
     int windowPosY = (monitorHeight - screenHeight) / 2;
-    SetWindowPosition(windowPosX, windowPosY + 30); // 30 pixels de offset para baixo
+    SetWindowPosition(windowPosX, windowPosY + 30);
 
     SetTargetFPS(60);
 
-    // INICIALIZA O DISPOSITIVO DE ÁUDIO (Mantenha, mesmo se os sons estiverem comentados)
-    InitAudioDevice();
+    InitAudioDevice(); // Inicializa o dispositivo de áudio
 
     // Carrega a Fonte Personalizada
     g_marvel_font = LoadFont("assets/fonte/MarvelAlternativa.ttf"); 
@@ -65,19 +85,23 @@ int main(void) {
         printf("AVISO: Nao foi possivel carregar 'assets/fonte/MarvelAlternativa.ttf'. Usando fonte padrao.\n");
     }
 
-    // --- CARREGA SONS E MÚSICAS --- (Mantenham comentadas enquanto não tem os arquivos)
-    // g_music_background = LoadMusicStream("resources/sounds/tema_marvel.mp3");
-    // g_sound_correct = LoadSound("resources/sounds/acerto.wav");
-    // g_sound_wrong = LoadSound("resources/sounds/erro.wav");
-    // g_sound_win = LoadSound("resources/sounds/vitoria.wav");
-    // g_sound_lose = LoadSound("resources/sounds/derrota.wav");
-    // g_sound_menu_click = LoadSound("resources/sounds/menu_click.wav");
-    // // REPRODUZ MÚSICA DE FUNDO NO INÍCIO DO JOGO (Mantenham comentada)
-    // PlayMusicStream(g_music_background);
+    // CARREGA TODOS OS SONS E MÚSICAS (Descomentados e usando seus caminhos)
+    g_music_background = LoadMusicStream("assets/sounds/TemaMarvel.mp3"); 
+    g_sound_correct = LoadSound("assets/sounds/Acerto.mp3"); 
+    g_sound_wrong = LoadSound("assets/sounds/Erro.mp3");   
+    g_sound_win = LoadSound("assets/sounds/Vitoria.mp3");  
+    g_sound_lose = LoadSound("assets/sounds/Derrota.mp3");  
+    g_sound_menu_click = LoadSound("assets/sounds/Botao.mp3"); 
 
-    // --- Carrega perguntas do CSV (chamada única no início) ---
+    // CARREGA ATIVOS DA MANOPLA (Imagem e Som do Estalo)
+    g_texture_gauntlet = LoadTexture("assets/images/manopla_estalo.png");
+    g_sound_snap = LoadSound("assets/sounds/estalo_thanos.mp3"); 
+
+
+    // Carrega perguntas do CSV (chamada única no início)
     printf("Carregando perguntas do arquivo CSV... (Verifique o console para feedback)\n");
     g_perguntas = carregaPerguntasDeCSV("questoes.csv", &g_total_perguntas);
+    
     if (g_perguntas == NULL) {
         printf("AVISO: Nenhuma pergunta carregada ou erro ao abrir 'questoes.csv'.\n");
         g_total_perguntas = 0;
@@ -86,10 +110,16 @@ int main(void) {
     }
     printf("Pressione ESC na janela Raylib para sair a qualquer momento.\n");
 
+
+    // REPRODUZ MÚSICA DE FUNDO NO INÍCIO DO JOGO
+    PlayMusicStream(g_music_background);
+
+
     // --- Loop Principal do Jogo (Raylib) ---
+    // Este loop é o coração do jogo, chamando as funções de Update e Draw para a tela atual.
     while (!WindowShouldClose() && currentScreen != GAME_EXIT) { 
-        // ATUALIZA O FLUXO DA MÚSICA DE FUNDO (Mantenha comentada)
-        // UpdateMusicStream(g_music_background);
+        // ATUALIZA O FLUXO DA MÚSICA DE FUNDO
+        UpdateMusicStream(g_music_background);
 
         // --- Atualização da Lógica do Jogo (Chamando a função de Update da tela atual) ---
         switch (currentScreen) {
@@ -99,12 +129,12 @@ int main(void) {
             case GAME_DISPLAY_QUESTIONS: UpdateDisplayQuestionsScreen(); break;
             case GAME_PLAYING_GRAPHICAL: UpdatePlayingGraphicalScreen(); break;
             case GAME_INSERT_QUESTION:  UpdateInsertQuestionScreen();   break;
-            case GAME_LIST_QUESTIONS:   UpdateListQuestionsScreen();    break;
+            case GAME_LIST_QUESTIONS:   UpdateListQuestionsScreen();    break; 
             case GAME_SEARCH_QUESTION:  UpdateSearchQuestionScreen();   break;
             case GAME_ALTER_QUESTION:   UpdateAlterQuestionScreen();    break;
             case GAME_DELETE_QUESTION:  UpdateDeleteQuestionScreen();   break;
             case GAME_ENDING:           UpdateEndingScreen();           break;
-            case GAME_PAUSE:            // UpdatePauseScreen();        break;
+            case GAME_PAUSE:            // UpdatePauseScreen();        break; // Implementar depois se necessário
             case GAME_WIN:              UpdateWinScreen();              break;
             case GAME_LOSE:             UpdateLoseScreen();             break;
             default: break;
@@ -126,7 +156,7 @@ int main(void) {
                 case GAME_ALTER_QUESTION:   DrawAlterQuestionScreen();    break;
                 case GAME_DELETE_QUESTION:  DrawDeleteQuestionScreen();   break;
                 case GAME_ENDING:           DrawEndingScreen();           break;
-                case GAME_PAUSE:            // DrawPauseScreen();        break;
+                case GAME_PAUSE:            // DrawPauseScreen();        break; // Implementar depois
                 case GAME_WIN:              DrawWinScreen();              break;
                 case GAME_LOSE:             DrawLoseScreen();             break;
                 default: break;
@@ -136,22 +166,25 @@ int main(void) {
     }
 
     // --- Desinicialização ---
-    // DESCARREGA TODOS OS RECURSOS DE ÁUDIO (Mantenham comentados enquanto não tem sons)
-    // UnloadMusicStream(g_music_background);
-    // UnloadSound(g_sound_correct);
-    // UnloadSound(g_sound_wrong);
-    // UnloadSound(g_sound_win);
-    // UnloadSound(g_sound_lose);
-    // UnloadSound(g_sound_menu_click);
-    CloseAudioDevice(); // FECHA O DISPOSITIVO DE ÁUDIO (Importante chamar, mesmo sem sons carregados)
-
     UnloadFont(g_marvel_font);
     if (g_perguntas != NULL) {
         liberaRecursos(g_perguntas, g_total_perguntas);
         g_perguntas = NULL;
     }
-    CloseWindow(); // Fecha a janela da Raylib
+    // DESCARREGA TODOS OS RECURSOS DE ÁUDIO E TEXTURAS
+    UnloadMusicStream(g_music_background);
+    UnloadSound(g_sound_correct);
+    UnloadSound(g_sound_wrong);
+    UnloadSound(g_sound_win);
+    UnloadSound(g_sound_lose);
+    UnloadSound(g_sound_menu_click);
+    UnloadTexture(g_texture_gauntlet); 
+    UnloadSound(g_sound_snap);         
+    CloseAudioDevice(); 
+    CloseWindow();
 
     return 0;
 }
+
+
 

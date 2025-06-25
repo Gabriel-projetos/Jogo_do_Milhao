@@ -1,23 +1,27 @@
+// Headers/telas_jogo.h - Definições Centrais para o Jogo Raylib
+// Contém enums, variáveis globais (extern) e protótipos de todas as funções de tela e auxiliares.
+
 #ifndef TELAS_JOGO_H
 #define TELAS_JOGO_H
 
-#include "raylib.h" 
-#include <stdio.h>  
-#include <ctype.h>  
-#include <stdbool.h> 
-#include "Headers/pergunta.h" 
-#include "Headers/leitor_csv.h" 
-#include "Headers/funcoes_padrao.h" 
-#include "Headers/menu_inicial.h"   
-#include "Headers/jogo.h"           
+#include "raylib.h"    // Inclui Raylib para tipos como Rectangle, Color, Vector2, Font, etc.
+#include <stdio.h>     // Para sprintf (usado em TextFormat)
+#include <ctype.h>     // Para toupper (usado em lógica de botões e respostas)
+#include <stdbool.h>   // Para tipo bool
 
+// Inclua seus Headers personalizados que AS FUNÇÕES DE TELAS (em sources/telas_jogo.c) vão precisar
+#include "Headers/pergunta.h"
+#include "Headers/leitor_csv.h"
+#include "Headers/funcoes_padrao.h"
+#include "Headers/menu_inicial.h"   // Para Opcao (se as telas usarem)
+#include "Headers/jogo.h"           // Para sorteiaPorNivel, jogoAcontece, perguntaDoMilhao (se as telas usarem)
 
 // --- Definição de Estados do Jogo ---
 typedef enum GameScreen {
     GAME_LOGO = 0,
     GAME_TITLE,
     GAME_MAIN_MENU,         // Menu principal com botões gráficos
-    GAME_DISPLAY_QUESTIONS, // Estado para exibir perguntas uma a uma
+    GAME_DISPLAY_QUESTIONS, // Estado para exibir perguntas uma a uma (apenas para demonstração)
     GAME_PLAYING_GRAPHICAL, // ESTADO DO JOGO INTERATIVO
     GAME_INSERT_QUESTION,   // Interação via console
     GAME_LIST_QUESTIONS,    // Interação via console
@@ -28,23 +32,23 @@ typedef enum GameScreen {
     GAME_PAUSE,
     GAME_WIN,               // Tela de vitória específica
     GAME_LOSE,
-    GAME_EXIT = -1          
+    GAME_EXIT = -1          // Valor para indicar que o jogo deve sair
 } GameScreen;
 
 // --- Estados Internos da Tela de Jogo (GAME_PLAYING_GRAPHICAL) ---
 typedef enum GamePlayState {
-    PLAYING_QUESTION = 0,    
-    PLAYING_FEEDBACK,     
-    PLAYING_NEXT_QUESTION  
+    PLAYING_QUESTION = 0,    // Mostrando a pergunta, esperando resposta do jogador
+    PLAYING_FEEDBACK,      // Mostrando feedback (correto/errado) após a resposta
+    PLAYING_NEXT_QUESTION  // Transicionando para a próxima pergunta ou fim de jogo
 } GamePlayState;
 
-// --- Variáveis Globais ---
+// --- Variáveis Globais (declaradas como 'extern' aqui, DEFINIDAS em main.c) ---
 extern Pergunta *g_perguntas;
 extern int g_total_perguntas;
 extern int g_current_display_question_idx;
-extern GameScreen currentScreen;
+extern GameScreen currentScreen; // O estado global da tela atual
 
-// --- Variáveis de ESTADO DO JOGO PRINCIPAL ---
+// Variáveis de ESTADO DO JOGO PRINCIPAL (GAME_PLAYING_GRAPHICAL)
 extern int g_current_level;         
 extern int g_correct_answers_in_row;
 extern int g_current_question_idx;
@@ -53,24 +57,28 @@ extern int g_answer_feedback_timer;
 extern bool g_is_answer_correct;
 extern char g_selected_answer_char;
 extern char g_correct_answer_char;
+
 extern int framesCounter; // Contador de frames para as telas de logo/introdução
 extern Font g_marvel_font; // A fonte personalizada
 
-// --- VARIÁVEIS GLOBAIS PARA SONS (Sons, já estão declarados aqui) ---
-extern Music g_music_background;
-extern Sound g_sound_correct;
-extern Sound g_sound_wrong;
-extern Sound g_sound_win;
-extern Sound g_sound_lose;
-extern Sound g_sound_menu_click;
+// VARIÁVEIS GLOBAIS PARA SONS
+extern Music g_music_background;    // Música de fundo
+extern Sound g_sound_correct;       // Som de resposta correta
+extern Sound g_sound_wrong;         // Som de resposta errada
+extern Sound g_sound_win;           // Som de vitória
+extern Sound g_sound_lose;          // Som de derrota
+extern Sound g_sound_menu_click;    // Som de clique no menu
+extern Texture2D g_texture_gauntlet; // Textura da imagem da manopla
+extern Sound g_sound_snap;           // Som do estalo dos dedos
+extern bool g_gauntlet_snap_active;  // Flag para controlar a exibição da manopla
+extern int g_gauntlet_snap_timer;    // Timer para a duração da exibição
 
-// --- NOVAS VARIÁVEIS PARA AS DICAS ---
-extern int g_hint_exclude_used; // Contador para a dica "Excluir Questão" (max 1 uso por partida)
-extern int g_hint_skip_used;    // Contador para a dica "Pular Questão" (max 2 usos por partida)
-extern int g_hint_fifty_fifty_used; // Contador para a dica "Meio a Meio" (max 3 usos por partida)
-
-extern bool g_fifty_fifty_active; // Flag para saber se a dica Meio a Meio está ativa para a pergunta atual
-extern char g_fifty_fifty_eliminated_chars[2]; // Guarda as letras das alternativas eliminadas pela dica 50/50
+// VARIÁVEIS PARA AS DICAS
+extern int g_hint_exclude_used; 
+extern int g_hint_skip_used;    
+extern int g_hint_fifty_fifty_used; 
+extern bool g_fifty_fifty_active; 
+extern char g_fifty_fifty_eliminated_chars[2]; 
 
 // --- Definições de Cores Personalizadas para o Tema Marvel ---
 #define MARVEL_RED       (Color){ 178, 20, 30, 255 }
@@ -81,40 +89,55 @@ extern char g_fifty_fifty_eliminated_chars[2]; // Guarda as letras das alternati
 #define MARVEL_DARKGRAY  (Color){ 30, 30, 30, 255 }
 #define COLOR_CORRETO    (Color){ 0, 150, 0, 255 }
 #define COLOR_ERRADO     (Color){ 150, 0, 0, 255 }
-#define COLOR_HINT_AVAILABLE (Color){ 100, 0, 150, 255 } // Cor para botão de dica disponível
-#define COLOR_HINT_USED     (Color){ 60, 0, 90, 255 }  // Cor para botão de dica já usado
+#define COLOR_HINT_USED  (Color){ 80, 80, 80, 255 } 
+#define COLOR_HINT_AVAILABLE (Color){ 0, 100, 150, 255 } 
+#define COLOR_HINT_AVAILABLE_PURPLE (Color){ 100, 0, 150, 255 } 
+#define COLOR_HINT_USED_PURPLE      (Color){ 60, 0, 90, 255 }   
 
-// --- Protótipos das Funções das Telas (Update e Draw) ---
+
+// --- Protótipos das Funções de Lógica (Update) e Desenho (Draw) para CADA TELA ---
 void UpdateLogoScreen(void);
-void UpdateTitleScreen(void);
-void UpdateMainMenuScreen(void);
-void UpdateDisplayQuestionsScreen(void);
-void UpdatePlayingGraphicalScreen(void);
-void UpdateInsertQuestionScreen(void);
-void UpdateListQuestionsScreen(void);
-void UpdateSearchQuestionScreen(void);
-void UpdateAlterQuestionScreen(void);
-void UpdateDeleteQuestionScreen(void);
-void UpdateEndingScreen(void);
-void UpdateWinScreen(void);
-void UpdateLoseScreen(void);
 void DrawLogoScreen(void);
+
+void UpdateTitleScreen(void);
 void DrawTitleScreen(void);
+
+void UpdateMainMenuScreen(void);
 void DrawMainMenuScreen(void);
+
+void UpdateDisplayQuestionsScreen(void);
 void DrawDisplayQuestionsScreen(void);
+
+void UpdatePlayingGraphicalScreen(void);
 void DrawPlayingGraphicalScreen(void);
+
+void UpdateInsertQuestionScreen(void);
 void DrawInsertQuestionScreen(void);
+
+void UpdateListQuestionsScreen(void); 
 void DrawListQuestionsScreen(void);
+
+void UpdateSearchQuestionScreen(void);
 void DrawSearchQuestionScreen(void);
+
+void UpdateAlterQuestionScreen(void);
 void DrawAlterQuestionScreen(void);
+
+void UpdateDeleteQuestionScreen(void);
 void DrawDeleteQuestionScreen(void);
+
+void UpdateEndingScreen(void);
 void DrawEndingScreen(void);
+
+void UpdateWinScreen(void);
 void DrawWinScreen(void);
+
+void UpdateLoseScreen(void);
 void DrawLoseScreen(void);
 
-// --- Funções auxiliares (UI e Jogo) ---
+// Funções auxiliares (UI e Jogo) - seus protótipos também ficam aqui
 bool GuiButton(Rectangle bounds, const char *text, Color buttonColor, Color textColor);
-void ResetGamePlayingState(void); // Reseta variáveis de jogo (incluindo dicas)
-void LoadNextQuestion(void);      // Carrega a próxima pergunta sorteada
+void ResetGamePlayingState(void);
+void LoadNextQuestion(void);
 
 #endif // TELAS_JOGO_H

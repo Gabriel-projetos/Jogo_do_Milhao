@@ -18,8 +18,8 @@ SRCS = main.c \
        $(SRC_DIR)/funcoes_padrao.c \
        $(SRC_DIR)/leitor_csv.c \
        $(SRC_DIR)/jogo.c \
-       $(SRC_DIR)/telas_jogo.c # CORRIGIDO: Adicionado o arquivo de implementação das telas dentro de sources/
-
+       $(SRC_DIR)/telas_jogo.c 
+	   
 # Arquivos objeto (.o) gerados a partir dos arquivos-fonte
 OBJS = $(patsubst %.c,%.o,$(SRCS))
 
