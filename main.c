@@ -104,7 +104,7 @@ int main(void) {
 
 
     // CARREGA ATIVOS DA MANOPLA (Imagem e Som do Estalo)
-    g_texture_gauntlet = LoadTexture("assets/images/manopla_estalo.png");
+    g_texture_gauntlet = LoadTexture("assets/imagens/manopla_estalo.png");
     
     // Carrega perguntas do CSV (chamada única no início)
     printf("Carregando perguntas do arquivo CSV... (Verifique o console para feedback)\n");
