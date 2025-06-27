@@ -25,6 +25,7 @@ LIBPATH = -L$(RAYLIB_PATH)/lib
 ifeq ($(OS),Windows_NT)
 
 	EXTRA_FLAGS = -Wall -Wextra -Wno-missing-braces -std=c99 -lraylib -lm -lopengl32 -lgdi32 -lwinmm
+	INCLUDE = -I./include -I./Headers -L./libwin
 	BIN = $(BINNAME).exe
 	RM = del /F /Q
 	RUN = .\\$(BIN)
