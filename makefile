@@ -1,54 +1,37 @@
-
-# Detecta o sistema operacional (Windows ou Linux)
+# Detecta o sistema operacional
 ifdef OS
   OS := $(strip $(OS))
 else
   OS := $(strip $(shell uname))
 endif
 
-# Nome base do executável (sem extensão)
-BINNAME = jogo_do_milhao
+# Nome do executável
+BINNAME = Jogo_do_Milhao
 
-
-# CONFIGURAÇÕES DE RAYLIB GLOBAL
+# Arquivo final
 ifeq ($(OS),Windows_NT)
-	RAYLIB_PATH ?= C:/raylib
-else
-	RAYLIB_PATH ?= /usr/local
-endif
-
-# Inclusão e linkagem usando variável global RAYLIB_PATH
-INCLUDE = -I$(RAYLIB_PATH)/include -I./Headers
-LIBPATH = -L$(RAYLIB_PATH)/lib
-
-# FLAGS E NOMES DE ARQUIVOS POR SO
-ifeq ($(OS),Windows_NT)
-
-	EXTRA_FLAGS = -Wall -Wextra -Wno-missing-braces -std=c99 -lraylib -lm -lopengl32 -lgdi32 -lwinmm
 	INCLUDE = -I./include -I./Headers -L./libwin
+	EXTRA_FLAGS = -Wall -Wextra -Wno-missing-braces -std=c99 -l:libRaylib.a -lopengl32 -lgdi32 -lwinmm
 	BIN = $(BINNAME).exe
 	RM = del /F /Q
 	RUN = .\\$(BIN)
-
 else
-
+	INCLUDE = -I./include -I./Headers -L./lib
 	EXTRA_FLAGS = -Wall -Wextra -std=c99 -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 	BIN = ./$(BINNAME)
 	RM = rm -f
 	RUN = ./$(BIN)
-
 endif
 
-# FONTES DO PROJETO
+# Fontes
 SRC = main.c ./sources/*.c
 
-# ALVOS 
 all:
 	@echo "Compilando $(BIN)..."
-	gcc $(SRC) -g $(EXTRA_FLAGS) $(INCLUDE) $(LIBPATH) -o $(BIN)
+	gcc $(SRC) -g $(EXTRA_FLAGS) $(INCLUDE) -o $(BIN)
 
 run:
-	@echo "Executando $(BIN)..."
+	@echo "Executando..."
 	$(RUN)
 
 debug:
