@@ -1,5 +1,4 @@
 // Headers/telas_jogo.h - Definições Centrais para o Jogo Raylib
-// Contém enums, variáveis globais (extern) e protótipos de todas as funções de tela e auxiliares.
 
 #ifndef TELAS_JOGO_H
 #define TELAS_JOGO_H
@@ -12,9 +11,9 @@
 #include "pergunta.h"
 #include "leitor_csv.h"
 #include "funcoes_padrao.h"
-#include "menu_inicial.h"  // Para Opcao (se as telas usarem)
-#include "jogo.h"          // Para sorteiaPorNivel, jogoAcontece, perguntaDoMilhao (se as telas usarem)
-#include "ranking.h"               // NOVO: Inclui o cabeçalho do ranking para a struct Ranking e LEADER_SIZE
+#include "menu_inicial.h"
+#include "jogo.h"          
+#include "ranking.h"               // Inclui o cabeçalho do ranking para a struct Ranking e LEADER_SIZE
 
 // --- Definição de Estados do Jogo ---
 typedef enum GameScreen {
@@ -80,10 +79,7 @@ extern Sound g_sound_wrong;         // Som de resposta errada
 extern Sound g_sound_win;           // Som de vitória
 extern Sound g_sound_lose;          // Som de derrota
 extern Sound g_sound_menu_click;    // Som de clique no menu
-extern Texture2D g_texture_gauntlet; // Textura da imagem da manopla
 extern Sound g_sound_snap;          // Som do estalo dos dedos
-extern bool g_gauntlet_snap_active;  // Flag para controlar a exibição da manopla
-extern int g_gauntlet_snap_timer;    // Timer para a duração da exibição
 
 // VARIÁVEIS PARA AS DICAS
 extern int g_hint_exclude_used; 
@@ -103,7 +99,6 @@ extern int g_player_final_score;            // A pontuação final do jogador (p
 
 
 // --- Definições de Cores Personalizadas para o Tema Marvel ---
-// Essas definições são consistentes com as usadas em telas_jogo.c
 #define MARVEL_RED              (Color){ 178, 20, 30, 255 }
 #define MARVEL_BLUE             (Color){ 10, 80, 150, 255 }
 #define MARVEL_GOLD             (Color){ 255, 215, 0, 255 }
@@ -151,8 +146,8 @@ void DrawAlterQuestionScreen(void);
 void UpdateDeleteQuestionScreen(void);
 void DrawDeleteQuestionScreen(void);
 
-void UpdateEndingScreen(void); // Agora gerencia múltiplos estados (score, input, ranking)
-void DrawEndingScreen(void);   // Agora desenha múltiplos estados
+void UpdateEndingScreen(void); // Gerencia múltiplos estados (score, input, ranking)
+void DrawEndingScreen(void);   // Desenha múltiplos estados
 
 void UpdateWinScreen(void);
 void DrawWinScreen(void);
@@ -160,9 +155,12 @@ void DrawWinScreen(void);
 void UpdateLoseScreen(void);
 void DrawLoseScreen(void);
 
-// NOVO: Protótipos para a tela de ranking dedicada
+//Protótipos para a tela de ranking dedicada
 void UpdateRankingScreen(void);
 void DrawRankingScreen(void);
+
+void UpdateEditMenuScreen(void);
+void DrawEditMenuScreen(void);
 
 // Funções auxiliares (UI e Jogo) - seus protótipos também ficam aqui
 bool GuiButton(Rectangle bounds, const char *text, Color buttonColor, Color textColor);

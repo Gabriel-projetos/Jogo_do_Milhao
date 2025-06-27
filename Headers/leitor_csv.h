@@ -1,12 +1,15 @@
 #ifndef LEITOR_CSV_H
 #define LEITOR_CSV_H
 
-#include "../headers/pergunta.h"
+#include "pergunta.h"
 
-// Remove espaços no início e fim da string (in-place)
+// Remove espaços em branco no início e fim da string (in-place)
 char* trim(char *str);
 
-// Carrega perguntas do arquivo CSV, retorna vetor dinamicamente alocado e total em *total
+// Carrega perguntas de um arquivo CSV..
 Pergunta* carregaPerguntasDeCSV(const char *nome_arquivo, int *total);
+
+// Salva um array de perguntas em um arquivo CSV.
+void salvaPerguntasNoCSV(Pergunta *perguntas, const char *filename, int total_perguntas);
 
 #endif
