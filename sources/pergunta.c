@@ -47,6 +47,8 @@ void recebePergunta(Pergunta **perguntas, int *total) {
 
     (*total)++;
     printf("Pergunta adicionada com sucesso!\n");
+
+    salvaPerguntasNoCSV(*perguntas, "questoes.csv", total);
 }
 
 
@@ -130,6 +132,7 @@ void alterarPergunta(Pergunta *perguntas, int total) {
     perguntas[indice].nivel = (Dificuldade) nivel;
     limpaBuffer();
 
+    salvaPerguntasNoCSV(*perguntas, "questoes.csv", total);
     printf("Pergunta %d alterada com sucesso!\n", indice);
 }
 
@@ -160,20 +163,6 @@ void excluirPergunta(Pergunta **perguntas, int *total) {
     } else {
         printf("Erro ao realocar vetor de perguntas!\n");
     }
+
+    salvaPerguntasNoCSV(*perguntas, "questoes.csv", total);
 }
-
-//Salva a pergunta no CSV para não perder os dados
-void salvaPerguntaNoCSV(const char *questoes, Pergunta *pergunta){
-    FILE *file = fopen(questoes, "a");
-    if(file == NULL){
-        printf("Erro ao abrir o arquivo %s\n", questoes);
-    }//if
-
-    fprintf(file, "%s;", pergunta->enunciado);
-    for(int i = 0; i < 4; i++){
-        fprintf(file, "%s;", pergunta->alternativas[i].texto);
-    }//for
-    
-    fprintf(file, "%c;%d\n", pergunta->correta, pergunta->nivel);
-    fclose(file);
-}//salvaPerguntaNoCSV

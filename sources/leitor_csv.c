@@ -125,3 +125,23 @@ Pergunta* carregaPerguntasDeCSV(const char *nome_arquivo, int *total) {
     *total = count;
     return perguntas;
 }
+
+void salvaPerguntasNoCSV(Pergunta *perguntas, const char *nome_arquivo, int total){
+    FILE *arq = fopen(nome_arquivo, "w");
+    if(arq == NULL) perror("Erro ao abrir o arquivo");
+
+    fprintf(arq, "Enunciado, Alternativa A, Alternativa B, Atlernativa C, Alternativa D, Corretta, Nivel\n");
+    for (int i = 0; i < total; i++){
+        fprintf(arq, "%s, %s, %s, %s, %s, %c, %d\n",
+            perguntas[i].enunciado,
+            perguntas[i].alternativas[0].texto,
+            perguntas[i].alternativas[1].texto,
+            perguntas[i].alternativas[2].texto,
+            perguntas[i].alternativas[3].texto,
+            perguntas[i].correta,
+            perguntas[i].nivel);
+    }//for
+    
+
+    fclose(arq);
+}//exportaParaCSV

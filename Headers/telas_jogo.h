@@ -33,6 +33,7 @@ typedef enum GameScreen {
     GAME_WIN,                // Tela de vitória específica
     GAME_LOSE,               // Tela de derrota específica
     GAME_RANKING,            // NOVO: Tela dedicada para exibir o ranking a qualquer momento
+    GAME_EDIT_MENU,          // NOVO: Tela de edição de perguntas (opção no menu principal)
     GAME_EXIT = -1           // Valor para indicar que o jogo deve sair
 } GameScreen;
 

@@ -2,12 +2,16 @@
 #define MENU_INICIAL_H
 
 typedef enum {
-     INSERIR = 1,
+     JOGAR = 1, 
      LISTAR,
+     EXPORTAR,
      PESQUISAR,
-     ALTERAR,
-     EXCLUIR,
-     JOGAR,
      SAIR
 }Opcao;
+
+typedef enum{
+     INSERIR = 1,
+     ALTERAR,
+     EXCLUIR,
+}Exportar;
 #endif
