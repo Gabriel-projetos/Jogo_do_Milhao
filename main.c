@@ -147,6 +147,7 @@ int main(void) {
             case GAME_WIN:               UpdateWinScreen();              break;
             case GAME_LOSE:              UpdateLoseScreen();             break;
             case GAME_RANKING:           UpdateRankingScreen();          break;
+            case GAME_EDIT_MENU:         UpdateEditMenuScreen();          break;
             default: break;
         }
 

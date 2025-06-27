@@ -125,12 +125,12 @@ void UpdateMainMenuScreen(void) {
     int screenWidth = GetScreenWidth();
     float buttonWidth = screenWidth * 0.7f;
     float buttonHeight = 60;
-    float startY = GetScreenHeight() / 4;
+    float startY = GetScreenHeight() / 3;
     float padding = 20;
 
     // Botão JOGAR
     Rectangle playButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY, buttonWidth, buttonHeight };
-    if (GuiButton(playButtonBounds, "1 - JOGAR", MARVEL_BLUE, RAYWHITE)) { 
+    if (GuiButton(playButtonBounds, "JOGAR", MARVEL_BLUE, RAYWHITE)) { 
         if (g_total_perguntas == 0) {
             printf("Nao ha perguntas para jogar! Insira algumas primeiro (CONSOLE).\n");
         } else {
@@ -141,28 +141,32 @@ void UpdateMainMenuScreen(void) {
         }
     }
 
-    // Botão INSERIR PERGUNTA
-    Rectangle insertButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + buttonHeight + padding, buttonWidth, buttonHeight };
-    if (GuiButton(insertButtonBounds, "2 - INSERIR PERGUNTA", MARVEL_BLUE, RAYWHITE)) {
-        printf("\n--- INSERINDO PERGUNTA (INTERAJA PELO CONSOLE) ---\n");
-        recebePergunta(&g_perguntas, &g_total_perguntas);
-        printf("--- FIM DA INSERCAO NO CONSOLE ---\n");
+    Rectangle alterButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY, buttonWidth, buttonHeight };
+    if (GuiButton(alterButtonBounds, "EDITAR PERGUNTAS", MARVEL_BLUE, RAYWHITE)) {
+        if (g_total_perguntas == 0) {
+            printf("Nao ha perguntas para alterar (CONSOLE).\n");
+        } else {
+            printf("\n--- ALTERANDO PERGUNTA NO CONSOLE ---\n");
+            printf("A janela grafica pode congelar. Interaja pelo terminal.\n");
+            alterarPergunta(g_perguntas, g_total_perguntas);
+            printf("--- FIM DA ALTERACAO NO CONSOLE ---\n");
+        }
         SetGameScreen(GAME_MAIN_MENU); // Usar SetGameScreen
     }
     
     // Botão LISTAR PERGUNTAS
     Rectangle listButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 2 * (buttonHeight + padding), buttonWidth, buttonHeight };
-    if (GuiButton(listButtonBounds, "3 - LISTAR PERGUNTAS", MARVEL_BLUE, RAYWHITE)) {
+    if (GuiButton(listButtonBounds, "LISTAR", MARVEL_BLUE, RAYWHITE)) {
         if (g_total_perguntas == 0) {
             printf("Nao ha perguntas para listar (CONSOLE).\n");
         } else {
             printf("\n--- LISTANDO PERGUNTAS (VERIFIQUE O CONSOLE) ---\n");
            listaPerguntas(g_perguntas, g_total_perguntas); // Passando total_perguntas por referência
-            printf("--- FIM DA LISTAGEM NO CONSOLE ---\n");
+           printf("--- FIM DA LISTAGEM NO CONSOLE ---\n");
         }
         SetGameScreen(GAME_MAIN_MENU); // Usar SetGameScreen
     }
-
+    
     // Botão PESQUISAR PERGUNTA
     Rectangle searchButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 3 * (buttonHeight + padding), buttonWidth, buttonHeight };
     if (GuiButton(searchButtonBounds, "4 - PESQUISAR PERGUNTA", MARVEL_BLUE, RAYWHITE)) {
@@ -176,10 +180,40 @@ void UpdateMainMenuScreen(void) {
         }
         SetGameScreen(GAME_MAIN_MENU); // Usar SetGameScreen
     }
+    
+    // NOVO Botão: Ranking
+    Rectangle rankingButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 6 * (buttonHeight + padding), buttonWidth, buttonHeight };
+    if (GuiButton(rankingButtonBounds, "7 - RANKING", MARVEL_BLUE, RAYWHITE)) {
+        SetGameScreen(GAME_RANKING); // Ir para a tela de ranking
+    }
+    
+    // Botão SAIR (posicionado abaixo do novo botão Ranking)
+    Rectangle exitButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 7 * (buttonHeight + padding), buttonWidth, buttonHeight };
+    if (GuiButton(exitButtonBounds, "0 - SAIR", MARVEL_RED, RAYWHITE)) {
+        SetGameScreen(GAME_EXIT); // Usar SetGameScreen
+    }
+}
 
+void UpdateEditMenuScreen(void){
+    const int screenWidth = GetScreenWidth();
+    const int screenHeight = GetScreenHeight();
+    float buttonWidth = screenWidth * 0.7f;
+    float buttonHeight = 60;
+    float startY = screenHeight / 4;
+    float padding = 20;
+
+    // Botão INSERIR PERGUNTA
+    Rectangle insertButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + buttonHeight + padding, buttonWidth, buttonHeight };
+    if (GuiButton(insertButtonBounds, "EDITAR PERGUNTAS", MARVEL_BLUE, RAYWHITE)) {
+        printf("\n--- INSERINDO PERGUNTA (INTERAJA PELO CONSOLE) ---\n");
+        recebePergunta(&g_perguntas, &g_total_perguntas);
+        printf("--- FIM DA INSERCAO NO CONSOLE ---\n");
+        SetGameScreen(GAME_MAIN_MENU); // Usar SetGameScreen
+    }
+    
     // Botão ALTERAR PERGUNTA
     Rectangle alterButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 4 * (buttonHeight + padding), buttonWidth, buttonHeight };
-    if (GuiButton(alterButtonBounds, "5 - ALTERAR PERGUNTA", MARVEL_BLUE, RAYWHITE)) {
+    if (GuiButton(alterButtonBounds, "ALTERAR PERGUNTA", MARVEL_BLUE, RAYWHITE)) {
         if (g_total_perguntas == 0) {
             printf("Nao ha perguntas para alterar (CONSOLE).\n");
         } else {
@@ -190,10 +224,10 @@ void UpdateMainMenuScreen(void) {
         }
         SetGameScreen(GAME_MAIN_MENU); // Usar SetGameScreen
     }
-
+    
     // Botão EXCLUIR PERGUNTA
     Rectangle deleteButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 5 * (buttonHeight + padding), buttonWidth, buttonHeight };
-    if (GuiButton(deleteButtonBounds, "6 - EXCLUIR PERGUNTA", MARVEL_BLUE, RAYWHITE)) {
+    if (GuiButton(deleteButtonBounds, "EXCLUIR PERGUNTA", MARVEL_BLUE, RAYWHITE)) {
         if (g_total_perguntas == 0) {
             printf("Nao ha perguntas para excluir (CONSOLE).\n");
         } else {
@@ -205,18 +239,8 @@ void UpdateMainMenuScreen(void) {
         SetGameScreen(GAME_MAIN_MENU); // Usar SetGameScreen
     }
 
-    // NOVO Botão: Ranking
-    Rectangle rankingButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 6 * (buttonHeight + padding), buttonWidth, buttonHeight };
-    if (GuiButton(rankingButtonBounds, "7 - RANKING", MARVEL_BLUE, RAYWHITE)) {
-        SetGameScreen(GAME_RANKING); // Ir para a tela de ranking
-    }
-
-    // Botão SAIR (posicionado abaixo do novo botão Ranking)
-    Rectangle exitButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 7 * (buttonHeight + padding), buttonWidth, buttonHeight };
-    if (GuiButton(exitButtonBounds, "0 - SAIR", MARVEL_RED, RAYWHITE)) {
-        SetGameScreen(GAME_EXIT); // Usar SetGameScreen
-    }
 }
+
 
 void UpdateDisplayQuestionsScreen(void) {
     if (IsKeyPressed(KEY_SPACE)) {
@@ -511,14 +535,25 @@ void DrawMainMenuScreen(void) {
     float padding = 20;
 
     // Desenha todos os botões (sem a lógica de clique, que está no Update)
-    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY, buttonWidth, buttonHeight }, "1 - JOGAR", MARVEL_BLUE, RAYWHITE);
-    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + buttonHeight + padding, buttonWidth, buttonHeight }, "2 - INSERIR PERGUNTA", MARVEL_BLUE, RAYWHITE);
-    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 2 * (buttonHeight + padding), buttonWidth, buttonHeight }, "3 - LISTAR PERGUNTAS", MARVEL_BLUE, RAYWHITE);
-    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 3 * (buttonHeight + padding), buttonWidth, buttonHeight }, "4 - PESQUISAR PERGUNTA", MARVEL_BLUE, RAYWHITE);
-    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 4 * (buttonHeight + padding), buttonWidth, buttonHeight }, "5 - ALTERAR PERGUNTA", MARVEL_BLUE, RAYWHITE);
-    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 5 * (buttonHeight + padding), buttonWidth, buttonHeight }, "6 - EXCLUIR PERGUNTA", MARVEL_BLUE, RAYWHITE);
-    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 6 * (buttonHeight + padding), buttonWidth, buttonHeight }, "7 - RANKING", MARVEL_BLUE, RAYWHITE); // NOVO BOTÃO
-    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 7 * (buttonHeight + padding), buttonWidth, buttonHeight }, "0 - SAIR", MARVEL_RED, RAYWHITE);
+    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY, buttonWidth, buttonHeight }, "JOGAR", MARVEL_BLUE, RAYWHITE);
+    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 2 * (buttonHeight + padding), buttonWidth, buttonHeight }, "LISTAR PERGUNTAS", MARVEL_BLUE, RAYWHITE);
+    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 3 * (buttonHeight + padding), buttonWidth, buttonHeight }, "PESQUISAR PERGUNTA", MARVEL_BLUE, RAYWHITE);
+    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 6 * (buttonHeight + padding), buttonWidth, buttonHeight }, "RANKING", MARVEL_BLUE, RAYWHITE); // NOVO BOTÃO
+    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 7 * (buttonHeight + padding), buttonWidth, buttonHeight }, "SAIR", MARVEL_RED, RAYWHITE);
+}
+
+void DrawEditMenuScreen(void){
+    const int screenWidth = GetScreenWidth();
+    const int screenHeight = GetScreenHeight();
+    DrawText("EDIT MENU", screenWidth/2 - MeasureText("EDIT MENU", 40)/2, screenHeight/8, 40, MARVEL_GOLD);
+    float buttonWidth = screenWidth * 0.7f;
+    float buttonHeight = 60;
+    float startY = screenHeight / 4;
+    float padding = 20;
+    
+    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + buttonHeight + padding, buttonWidth, buttonHeight }, "INSERIR PERGUNTA", MARVEL_BLUE, RAYWHITE);
+    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 4 * (buttonHeight + padding), buttonWidth, buttonHeight }, "ALTERAR PERGUNTA", MARVEL_BLUE, RAYWHITE);
+    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 5 * (buttonHeight + padding), buttonWidth, buttonHeight }, "EXCLUIR PERGUNTA", MARVEL_BLUE, RAYWHITE);
 }
 
 void DrawDisplayQuestionsScreen(void) {
