@@ -1,7 +1,7 @@
 // sources/telas_jogo.c - Implementações para as Telas do Jogo Raylib (com Dicas, Posicionamento e Sons)
 
 #include "telas_jogo.h" // Inclui o cabeçalho das telas para ver os protótipos e variáveis globais
-#include "ranking.h"            // Inclui o cabeçalho do ranking para usar as funções lerRanking, salvarRanking, etc.
+#include "ranking.h"    // Inclui o cabeçalho do ranking para usar as funções lerRanking, salvarRanking, etc.
 #include "pergunta.h"
 #include <stdio.h>      // Para printf, sprintf
 #include <string.h>     // Para strlen, strcpy, strncpy, memset
@@ -14,6 +14,28 @@
 
 // --- REMOVIDAS AS DEFINIÇÕES DE CORES DUPLICADAS ---
 // As definições de cores agora estão SOMENTE em Headers/telas_jogo.h para evitar warnings de redefinição.
+
+// --- Implementação temporária para ProximaPerguntaIndex (AJUSTE CONFORME SEU CÓDIGO) ---
+// Esta é uma implementação DE EXEMPLO para que o código compile.
+// Você deve ter a lógica real dessa função em 'pergunta.c' ou similar.
+int ProximaPerguntaIndex(void) {
+    // Itera a partir da pergunta atual + 1 para encontrar a próxima pergunta não usada.
+    // Se chegar ao fim, pode reiniciar do começo ou indicar que não há mais perguntas.
+    for (int i = g_current_question_idx + 1; i < g_total_perguntas; ++i) {
+        if (g_perguntas[i].ja_foi_usada == 0) {
+            return i;
+        }
+    }
+    // Se não encontrar uma próxima pergunta não usada após o índice atual,
+    // tenta do início do array. Isso pode levar a um loop se todas forem usadas.
+    for (int i = 0; i < g_total_perguntas; ++i) {
+        if (g_perguntas[i].ja_foi_usada == 0) {
+            return i;
+        }
+    }
+    return -1; // Retorna -1 se não houver perguntas disponíveis ou todas foram usadas
+}
+
 
 // --- Implementações das Funções Auxiliares de UI Gráfica ---
 bool GuiButton(Rectangle bounds, const char *text, Color buttonColor, Color textColor) {
@@ -54,9 +76,9 @@ void ResetGamePlayingState(void) {
     g_fifty_fifty_eliminated_chars[0] = 0; // Limpa caracteres eliminados
     g_fifty_fifty_eliminated_chars[1] = 0;
     
-    // RESETAR ESTADO DA MANOPLA
-    g_gauntlet_snap_active = false;
-    g_gauntlet_snap_timer = 0;
+    // As variáveis da manopla e seu timer foram removidas
+    // g_gauntlet_snap_active = false;
+    // g_gauntlet_snap_timer = 0;
 
     // Resetar estado da tela de fim de jogo para a próxima vez que for acessada
     g_game_ending_state = ENDING_SHOW_SCORE; 
@@ -141,17 +163,10 @@ void UpdateMainMenuScreen(void) {
         }
     }
 
-    Rectangle alterButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY, buttonWidth, buttonHeight };
+    // Botão EDITAR PERGUNTAS
+    Rectangle alterButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + (buttonHeight + padding), buttonWidth, buttonHeight };
     if (GuiButton(alterButtonBounds, "EDITAR PERGUNTAS", MARVEL_BLUE, RAYWHITE)) {
-        if (g_total_perguntas == 0) {
-            printf("Nao ha perguntas para alterar (CONSOLE).\n");
-        } else {
-            printf("\n--- ALTERANDO PERGUNTA NO CONSOLE ---\n");
-            printf("A janela grafica pode congelar. Interaja pelo terminal.\n");
-            alterarPergunta(g_perguntas, g_total_perguntas);
-            printf("--- FIM DA ALTERACAO NO CONSOLE ---\n");
-        }
-        SetGameScreen(GAME_MAIN_MENU); // Usar SetGameScreen
+        SetGameScreen(GAME_EDIT_MENU);
     }
     
     // Botão LISTAR PERGUNTAS
@@ -169,7 +184,7 @@ void UpdateMainMenuScreen(void) {
     
     // Botão PESQUISAR PERGUNTA
     Rectangle searchButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 3 * (buttonHeight + padding), buttonWidth, buttonHeight };
-    if (GuiButton(searchButtonBounds, "4 - PESQUISAR PERGUNTA", MARVEL_BLUE, RAYWHITE)) {
+    if (GuiButton(searchButtonBounds, "PESQUISAR PERGUNTA", MARVEL_BLUE, RAYWHITE)) {
         if (g_total_perguntas == 0) {
             printf("Nao ha perguntas para pesquisar (CONSOLE).\n");
         } else {
@@ -182,14 +197,14 @@ void UpdateMainMenuScreen(void) {
     }
     
     // NOVO Botão: Ranking
-    Rectangle rankingButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 6 * (buttonHeight + padding), buttonWidth, buttonHeight };
-    if (GuiButton(rankingButtonBounds, "7 - RANKING", MARVEL_BLUE, RAYWHITE)) {
+    Rectangle rankingButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 4 * (buttonHeight + padding), buttonWidth, buttonHeight };
+    if (GuiButton(rankingButtonBounds, "RANKING", MARVEL_BLUE, RAYWHITE)) {
         SetGameScreen(GAME_RANKING); // Ir para a tela de ranking
     }
     
     // Botão SAIR (posicionado abaixo do novo botão Ranking)
-    Rectangle exitButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 7 * (buttonHeight + padding), buttonWidth, buttonHeight };
-    if (GuiButton(exitButtonBounds, "0 - SAIR", MARVEL_RED, RAYWHITE)) {
+    Rectangle exitButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 5 * (buttonHeight + padding), buttonWidth, buttonHeight };
+    if (GuiButton(exitButtonBounds, "SAIR", MARVEL_RED, RAYWHITE)) {
         SetGameScreen(GAME_EXIT); // Usar SetGameScreen
     }
 }
@@ -204,7 +219,7 @@ void UpdateEditMenuScreen(void){
 
     // Botão INSERIR PERGUNTA
     Rectangle insertButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + buttonHeight + padding, buttonWidth, buttonHeight };
-    if (GuiButton(insertButtonBounds, "EDITAR PERGUNTAS", MARVEL_BLUE, RAYWHITE)) {
+    if (GuiButton(insertButtonBounds, "INSERIR PERGUNTA", MARVEL_BLUE, RAYWHITE)) {
         printf("\n--- INSERINDO PERGUNTA (INTERAJA PELO CONSOLE) ---\n");
         recebePergunta(&g_perguntas, &g_total_perguntas);
         printf("--- FIM DA INSERCAO NO CONSOLE ---\n");
@@ -212,7 +227,7 @@ void UpdateEditMenuScreen(void){
     }
     
     // Botão ALTERAR PERGUNTA
-    Rectangle alterButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 4 * (buttonHeight + padding), buttonWidth, buttonHeight };
+    Rectangle alterButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 2 * (buttonHeight + padding), buttonWidth, buttonHeight };
     if (GuiButton(alterButtonBounds, "ALTERAR PERGUNTA", MARVEL_BLUE, RAYWHITE)) {
         if (g_total_perguntas == 0) {
             printf("Nao ha perguntas para alterar (CONSOLE).\n");
@@ -226,7 +241,7 @@ void UpdateEditMenuScreen(void){
     }
     
     // Botão EXCLUIR PERGUNTA
-    Rectangle deleteButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 5 * (buttonHeight + padding), buttonWidth, buttonHeight };
+    Rectangle deleteButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 3 * (buttonHeight + padding), buttonWidth, buttonHeight };
     if (GuiButton(deleteButtonBounds, "EXCLUIR PERGUNTA", MARVEL_BLUE, RAYWHITE)) {
         if (g_total_perguntas == 0) {
             printf("Nao ha perguntas para excluir (CONSOLE).\n");
@@ -239,6 +254,11 @@ void UpdateEditMenuScreen(void){
         SetGameScreen(GAME_MAIN_MENU); // Usar SetGameScreen
     }
 
+    // Botão VOLTAR
+    Rectangle backButtonBounds = { (screenWidth - buttonWidth) / 2.0f, startY + 4 * (buttonHeight + padding), buttonWidth, buttonHeight };
+    if (GuiButton(backButtonBounds, "VOLTAR", MARVEL_RED, RAYWHITE)) {
+        SetGameScreen(GAME_MAIN_MENU);
+    }
 }
 
 
@@ -254,6 +274,7 @@ void UpdateDisplayQuestionsScreen(void) {
         SetGameScreen(GAME_MAIN_MENU); // Usar SetGameScreen
     }
 }
+
 void UpdatePlayingGraphicalScreen(void) {
     const int screenWidth = GetScreenWidth();
 
@@ -267,14 +288,8 @@ void UpdatePlayingGraphicalScreen(void) {
 
     Pergunta *current_question = &g_perguntas[g_current_question_idx];
 
-    // Atualização do timer da manopla
-    if (g_gauntlet_snap_active) {
-        g_gauntlet_snap_timer++;
-        if (g_gauntlet_snap_timer >= 60) { // 1 segundo
-            g_gauntlet_snap_active = false;
-            g_gauntlet_snap_timer = 0;
-        }
-    }
+    // As variáveis e lógica para o timer da manopla foram removidas daqui,
+    // mas os sons de "snap" permanecem onde são apropriados para as dicas.
 
     switch (g_game_play_state) {
         case PLAYING_QUESTION: {
@@ -283,59 +298,40 @@ void UpdatePlayingGraphicalScreen(void) {
             float hintPadding = 10;
             float hintX_Rightmost = screenWidth - hintButtonWidth - 20;
             float hintX_Middle = hintX_Rightmost - hintButtonWidth - hintPadding;
-            float hintX_Leftmost = hintX_Middle - hintButtonWidth - hintPadding;
+            // float hintX_Leftmost = hintX_Middle - hintButtonWidth - hintPadding; // REMOVIDO: unused variable
             float hintStartY = 50;
 
-            // 50/50 (já implementado no seu código)...
-
-            // Botão "Excluir Questão"
+            // Lógica para a dica 50/50 (permanece)
+            // Lógica para o botão "Excluir Questão" (permanece)
             Rectangle excludeButtonBounds = { hintX_Middle, hintStartY, hintButtonWidth, hintButtonHeight };
             Color excludeColor = (g_hint_exclude_used == 0) ? COLOR_HINT_AVAILABLE_PURPLE : COLOR_HINT_USED_PURPLE;
             if (GuiButton(excludeButtonBounds, "EXCLUIR", excludeColor, RAYWHITE)) {
                 if (g_hint_exclude_used == 0) {
-                    // Marca como usada
                     g_hint_exclude_used = 1;
-
-                    // Remove uma alternativa errada não removida ainda
                     for (int i = 0; i < 4; i++) {
                         if (toupper(current_question->alternativas[i].letra) != toupper(current_question->correta) &&
                             current_question->alternativas[i].removida == 0) {
-                            current_question->alternativas[i].removida = 1; // Remove
-                            break; // só remove uma
+                            current_question->alternativas[i].removida = 1;
+                            break;
                         }
                     }
-
-                    PlaySound(g_sound_snap);
-                    g_gauntlet_snap_active = true;
-                    g_gauntlet_snap_timer = 0;
+                    PlaySound(g_sound_snap); // Som de clique da dica, mantido
                 }
             }
 
-            // Botão "Pular Questão"
+            // Lógica para o botão "Pular Questão" (permanece)
             Rectangle skipButtonBounds = { hintX_Rightmost, hintStartY, hintButtonWidth, hintButtonHeight };
             Color skipColor = (g_hint_skip_used < 2) ? COLOR_HINT_AVAILABLE_PURPLE : COLOR_HINT_USED_PURPLE;
             if (GuiButton(skipButtonBounds, "PULAR", skipColor, RAYWHITE)) {
                 if (g_hint_skip_used < 2) {
                     g_hint_skip_used++;
-
-                    // Marca a pergunta como usada para não ser sorteada de novo
                     current_question->ja_foi_usada = 1;
-
-                    // Avança para próxima pergunta (exemplo)
-                    g_current_question_idx = ProximaPerguntaIndex(); // Função que você deve ter para pegar próximo índice
-
-                    g_game_play_state = LEVEL_COMPLETE; // Estado para avançar no jogo
-
-                    PlaySound(g_sound_snap);
-                    g_gauntlet_snap_active = true;
-                    g_gauntlet_snap_timer = 0;
+                    g_current_question_idx = ProximaPerguntaIndex();
+                    g_game_play_state = LEVEL_COMPLETE;
+                    PlaySound(g_sound_snap); // Som de clique da dica, mantido
                 }
             }
 
-            // Resto da lógica da pergunta, respostas, etc...
-        } break;
-    }
-}
             // Detecta cliques nas alternativas e entradas de teclado
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                 Vector2 mousePoint = GetMousePosition();
@@ -363,10 +359,9 @@ void UpdatePlayingGraphicalScreen(void) {
                 }
                 if (selected != ' ') {
                     g_selected_answer_char = selected;
-                    g_is_answer_correct = (toupper(selected) == toupper(current_question->correta)); // ***CORRIGIDO: 'correta'***
+                    g_is_answer_correct = (toupper(selected) == toupper(current_question->correta));
                     g_game_play_state = SHOWING_FEEDBACK; 
                     g_answer_feedback_timer = 0;
-                    // Toca som de acerto/erro
                     if (g_is_answer_correct) PlaySound(g_sound_correct);
                     else PlaySound(g_sound_wrong);
                 }
@@ -477,7 +472,7 @@ void UpdateEndingScreen(void) {
             if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
                 SetGameScreen(GAME_MAIN_MENU); // Volta ao menu principal
                 g_game_ending_state = ENDING_SHOW_SCORE; // Resetar para o próximo jogo
-                 PlayMusicStream(g_music_background);
+                PlayMusicStream(g_music_background);
             }
         } break;
     }
@@ -536,10 +531,11 @@ void DrawMainMenuScreen(void) {
 
     // Desenha todos os botões (sem a lógica de clique, que está no Update)
     GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY, buttonWidth, buttonHeight }, "JOGAR", MARVEL_BLUE, RAYWHITE);
+    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + (buttonHeight + padding), buttonWidth, buttonHeight }, "EDITAR PERGUNTAS", MARVEL_BLUE, RAYWHITE);
     GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 2 * (buttonHeight + padding), buttonWidth, buttonHeight }, "LISTAR PERGUNTAS", MARVEL_BLUE, RAYWHITE);
     GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 3 * (buttonHeight + padding), buttonWidth, buttonHeight }, "PESQUISAR PERGUNTA", MARVEL_BLUE, RAYWHITE);
-    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 6 * (buttonHeight + padding), buttonWidth, buttonHeight }, "RANKING", MARVEL_BLUE, RAYWHITE); // NOVO BOTÃO
-    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 7 * (buttonHeight + padding), buttonWidth, buttonHeight }, "SAIR", MARVEL_RED, RAYWHITE);
+    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 4 * (buttonHeight + padding), buttonWidth, buttonHeight }, "RANKING", MARVEL_BLUE, RAYWHITE); // NOVO BOTÃO
+    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 5 * (buttonHeight + padding), buttonWidth, buttonHeight }, "SAIR", MARVEL_RED, RAYWHITE);
 }
 
 void DrawEditMenuScreen(void){
@@ -552,8 +548,9 @@ void DrawEditMenuScreen(void){
     float padding = 20;
     
     GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + buttonHeight + padding, buttonWidth, buttonHeight }, "INSERIR PERGUNTA", MARVEL_BLUE, RAYWHITE);
-    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 4 * (buttonHeight + padding), buttonWidth, buttonHeight }, "ALTERAR PERGUNTA", MARVEL_BLUE, RAYWHITE);
-    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 5 * (buttonHeight + padding), buttonWidth, buttonHeight }, "EXCLUIR PERGUNTA", MARVEL_BLUE, RAYWHITE);
+    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 2 * (buttonHeight + padding), buttonWidth, buttonHeight }, "ALTERAR PERGUNTA", MARVEL_BLUE, RAYWHITE);
+    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 3 * (buttonHeight + padding), buttonWidth, buttonHeight }, "EXCLUIR PERGUNTA", MARVEL_BLUE, RAYWHITE);
+    GuiButton((Rectangle){ (screenWidth - buttonWidth) / 2.0f, startY + 4 * (buttonHeight + padding), buttonWidth, buttonHeight }, "VOLTAR", MARVEL_RED, RAYWHITE);
 }
 
 void DrawDisplayQuestionsScreen(void) {
@@ -580,7 +577,7 @@ void DrawDisplayQuestionsScreen(void) {
         }
 
         DrawText("Pressione ESPACO para a proxima pergunta, ESC para voltar ao menu.", 
-                  50, screenHeight - 40, 15, MARVEL_LIGHTGRAY);
+                     50, screenHeight - 40, 15, MARVEL_LIGHTGRAY);
 
     } else {
         DrawText("Nenhuma pergunta para exibir. Volte ao menu.", screenWidth/2 - MeasureText("Nenhuma pergunta para exibir. Volho ao menu.", 20)/2, screenHeight/2, 20, RAYWHITE);
@@ -623,9 +620,10 @@ void DrawPlayingGraphicalScreen(void) {
             if (is_eliminated_by_fifty_fifty) {
                 optionColor = DARKGRAY;
                 DrawRectangleRec(optionBounds, optionColor);
-                DrawTextEx(g_marvel_font, "X", 
-                           (Vector2){optionBounds.x + optionBounds.width / 2 - 10, optionBounds.y + optionHeight / 2 - 10}, 
-                           20, 2, RAYWHITE);
+                // Não desenha "X" se não for pra ter a manopla
+                // DrawTextEx(g_marvel_font, "X", 
+                //            (Vector2){optionBounds.x + optionBounds.width / 2 - 10, optionBounds.y + optionHeight / 2 - 10}, 
+                //            20, 2, RAYWHITE);
             } else {
                 if (g_game_play_state == SHOWING_FEEDBACK) { 
                     if (toupper(current_question->alternativas[i].letra) == toupper(g_selected_answer_char)) {
@@ -659,8 +657,30 @@ void DrawPlayingGraphicalScreen(void) {
             }
         }
 
-        // (O resto do seu código permanece igual)
-        // ...
+        // Desenho dos botões de dica
+        float hintButtonWidth = 100;
+        float hintButtonHeight = 40;
+        float hintPadding = 10;
+        float hintX_Rightmost = screenWidth - hintButtonWidth - 20;
+        float hintX_Middle = hintX_Rightmost - hintButtonWidth - hintPadding;
+        // float hintX_Leftmost = hintX_Middle - hintButtonWidth - hintPadding; // REMOVIDO: unused variable
+        float hintStartY = 50;
+
+        // Botão 50/50
+        Rectangle fiftyFiftyButtonBounds = { hintX_Middle - hintButtonWidth - hintPadding, hintStartY, hintButtonWidth, hintButtonHeight }; // Usa o espaço do hintX_Leftmost
+        Color fiftyFiftyColor = (g_hint_fifty_fifty_used == 0) ? COLOR_HINT_AVAILABLE_PURPLE : COLOR_HINT_USED_PURPLE; // Usando PURPLE como fallback
+        GuiButton(fiftyFiftyButtonBounds, "50/50", fiftyFiftyColor, RAYWHITE);
+
+        // Botão "Excluir"
+        Rectangle excludeButtonBounds = { hintX_Middle, hintStartY, hintButtonWidth, hintButtonHeight };
+        Color excludeColor = (g_hint_exclude_used == 0) ? COLOR_HINT_AVAILABLE_PURPLE : COLOR_HINT_USED_PURPLE;
+        GuiButton(excludeButtonBounds, "EXCLUIR", excludeColor, RAYWHITE);
+
+        // Botão "Pular"
+        Rectangle skipButtonBounds = { hintX_Rightmost, hintStartY, hintButtonWidth, hintButtonHeight };
+        Color skipColor = (g_hint_skip_used < 2) ? COLOR_HINT_AVAILABLE_PURPLE : COLOR_HINT_USED_PURPLE;
+        GuiButton(skipButtonBounds, "PULAR", skipColor, RAYWHITE);
+
 
     } else {
         // Nenhuma pergunta válida
@@ -708,9 +728,9 @@ void DrawDeleteQuestionScreen(void) {
 
 // --- ATUALIZAÇÃO DA TELA DE FIM DE JOGO (GAME_ENDING) ---
 void DrawEndingScreen(void) {
-    const int screenWidth = GetScreenWidth();
-    const int screenHeight = GetScreenHeight();
+    framesCounter++; // Usa para o cursor piscando
 
+    const int screenHeight = GetScreenHeight(); // screenWidth removido
     switch (g_game_ending_state) {
         case ENDING_SHOW_SCORE: {
             DrawText("FIM DE JOGO!", GetScreenWidth() / 2 - MeasureText("FIM DE JOGO!", 60) / 2, 100, 60, RAYWHITE);
@@ -784,8 +804,7 @@ void DrawLoseScreen(void) {
 
 // --- NOVA TELA: RANKING (para ver a qualquer momento) ---
 void DrawRankingScreen(void) {
-    const int screenWidth = GetScreenWidth();
-    const int screenHeight = GetScreenHeight();
+    const int screenHeight = GetScreenHeight(); // screenWidth removido
 
     DrawText("TOP 10 VINGADORES!", GetScreenWidth() / 2 - MeasureText("TOP 10 VINGADORES!", 40) / 2, 50, 40, MARVEL_GOLD);
     

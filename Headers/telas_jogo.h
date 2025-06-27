@@ -20,7 +20,7 @@ typedef enum GameScreen {
     GAME_LOGO = 0,
     GAME_TITLE,
     GAME_MAIN_MENU,          // Menu principal com botões gráficos
-    GAME_DISPLAY_QUESTIONS,  // Estado para exibir perguntas uma a uma (apenas para demonstração)
+    GAME_DISPLAY_QUESTIONS,  // Estado para exibir perguntas uma a uma
     GAME_PLAYING_GRAPHICAL,  // ESTADO DO JOGO INTERATIVO
     GAME_INSERT_QUESTION,    // Interação via console
     GAME_LIST_QUESTIONS,     // Interação via console
@@ -106,9 +106,7 @@ extern int g_player_final_score;            // A pontuação final do jogador (p
 #define MARVEL_LIGHTGRAY        (Color){ 150, 150, 150, 255 }
 #define MARVEL_DARKGRAY         (Color){ 30, 30, 30, 255 }
 #define COLOR_CORRETO           (Color){ 0, 150, 0, 255 }
-#define COLOR_ERRADO            (Color){ 150, 0, 0, 255 }
-#define COLOR_HINT_USED         (Color){ 80, 80, 80, 255 } 
-#define COLOR_HINT_AVAILABLE    (Color){ 0, 100, 150, 255 } 
+#define COLOR_ERRADO            (Color){ 150, 0, 0, 255 } 
 #define COLOR_HINT_AVAILABLE_PURPLE (Color){ 100, 0, 150, 255 } 
 #define COLOR_HINT_USED_PURPLE      (Color){ 60, 0, 90, 255 }   
 

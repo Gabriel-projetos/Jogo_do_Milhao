@@ -21,4 +21,8 @@ void converteMaiscula(char texto[]);
 //Libera a memória alocada para um array de 'Perguntas
 void liberaRecursos(Pergunta *perguntas, int total_perguntas);
 
+int ProximaPerguntaIndex(void);
+
+extern int g_current_display_question_idx;
+
 #endif

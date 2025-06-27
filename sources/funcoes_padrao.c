@@ -1,5 +1,7 @@
 #include "pergunta.h"
 
+int g_current_display_question_idx = 0;
+
 // Função para ler uma linha de texto dinamicamente (até ENTER)
 char *leTextoDinamico(){
      char *texto = NULL;
@@ -63,4 +65,5 @@ void converteMaiscula(char texto[]){
   for(int i = 0; texto[i] != 0; i++){
          texto[i] = toupper((unsigned char)texto[i]);
   }
+
 }
