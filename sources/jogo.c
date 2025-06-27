@@ -7,9 +7,6 @@
 #include "jogo.h"
 #include "funcoes_padrao.h"
 
-// Nota: A inclusão de "raylib.h" pode ser necessária se GetRandomValue() for usado aqui.
-// Como você está usando rand(), as inclusões atuais são suficientes.
-
 /**
  * @brief Sorteia Perguntas por Nível de Dificuldade, evitando repetidas.
  * @param perguntas Array de Pergunta

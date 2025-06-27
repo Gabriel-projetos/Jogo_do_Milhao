@@ -9,16 +9,6 @@
 #include <stdlib.h>     // Para rand (embora GetRandomValue da Raylib seja preferível)
 #include <time.h>       // Para srand e time
 
-// As variáveis globais (g_perguntas, currentScreen, etc.) são declaradas como 'extern' em telas_jogo.h.
-// Suas definições reais (onde elas são inicializadas) estão no main.c.
-// Aqui, nós apenas as usamos.
-
-// --- REMOVIDAS AS DEFINIÇÕES DE CORES DUPLICADAS ---
-// As definições de cores agora estão SOMENTE em Headers/telas_jogo.h para evitar warnings de redefinição.
-
-// --- Implementação temporária para ProximaPerguntaIndex (AJUSTE CONFORME SEU CÓDIGO) ---
-// Esta é uma implementação DE EXEMPLO para que o código compile.
-// Você deve ter a lógica real dessa função em 'pergunta.c' ou similar.
 int ProximaPerguntaIndex(void) {
     // Itera a partir da pergunta atual + 1 para encontrar a próxima pergunta não usada.
     // Se chegar ao fim, pode reiniciar do começo ou indicar que não há mais perguntas.
@@ -59,10 +49,9 @@ bool GuiButton(Rectangle bounds, const char *text, Color buttonColor, Color text
     return clicked;
 }
 
-// NOVO: Função auxiliar para aplicar a dica 50/50
 void ApplyFiftyFiftyHint(Pergunta *question) {
     // Coleta as letras das alternativas incorretas
-    char incorrect_options[3]; // Max 3 incorrect options (A, B, C, D - 1 correct)
+    char incorrect_options[3]; // Max 3 opções incorretas (A, B, C, D - 1 correct)
     int incorrect_count = 0;
     for (int i = 0; i < 4; i++) {
         if (toupper(question->alternativas[i].letra) != toupper(question->correta)) {
@@ -72,7 +61,7 @@ void ApplyFiftyFiftyHint(Pergunta *question) {
 
     if (incorrect_count >= 2) {
         // Inicializa o gerador de números aleatórios se ainda não foi
-        if (g_hint_fifty_fifty_used == 0) { // Only seed once per game session to avoid same random numbers
+        if (g_hint_fifty_fifty_used == 0) { // Inicializa o gerador apenas uma vez por sessão de jogo para não ter números aleatórios iguais.
             srand((unsigned int)time(NULL));
         }
         
@@ -108,15 +97,11 @@ void ResetGamePlayingState(void) {
     // RESETAR CONTADORES DE DICAS
     g_hint_exclude_used = 0;
     g_hint_skip_used = 0;
-    g_hint_fifty_fifty_used = 0; // Reset this counter
+    g_hint_fifty_fifty_used = 0; // Reseta o contador
     g_fifty_fifty_active = false; // Desativa a dica 50/50
     g_fifty_fifty_eliminated_chars[0] = 0; // Limpa caracteres eliminados
     g_fifty_fifty_eliminated_chars[1] = 0;
     
-    // As variáveis da manopla e seu timer foram removidas
-    // g_gauntlet_snap_active = false;
-    // g_gauntlet_snap_timer = 0;
-
     // Resetar estado da tela de fim de jogo para a próxima vez que for acessada
     g_game_ending_state = ENDING_SHOW_SCORE; 
     memset(g_player_name_input, 0, sizeof(g_player_name_input)); // Limpa o buffer do nome
@@ -160,12 +145,10 @@ void LoadNextQuestion(void) {
     }
 }
 
-
-// Função para mudar a tela do jogo (protótipo em telas_jogo.h)
+// Função para mudar a tela do jogo
 void SetGameScreen(GameScreen screen) {
     currentScreen = screen;
 }
-
 
 // --- Implementações das Funções de Update (Lógica de cada tela) ---
 void UpdateLogoScreen(void) {
@@ -325,9 +308,6 @@ void UpdatePlayingGraphicalScreen(void) {
 
     Pergunta *current_question = &g_perguntas[g_current_question_idx];
 
-    // As variáveis e lógica para o timer da manopla foram removidas daqui,
-    // mas os sons de "snap" permanecem onde são apropriados para as dicas.
-
     switch (g_game_play_state) {
         case PLAYING_QUESTION: {
             float hintButtonWidth = 100;
@@ -338,7 +318,7 @@ void UpdatePlayingGraphicalScreen(void) {
             float hintX_Leftmost = hintX_Middle - hintButtonWidth - hintPadding; 
             float hintStartY = 50;
 
-            // Lógica para a dica 50/50 (AJUSTADO PARA 3 USOS)
+            // Lógica para a dica 50/50
             Rectangle fiftyFiftyButtonBounds = { hintX_Leftmost, hintStartY, hintButtonWidth, hintButtonHeight };
             Color fiftyFiftyColor = (g_hint_fifty_fifty_used < 3) ? COLOR_HINT_AVAILABLE_PURPLE : COLOR_HINT_USED_PURPLE;
             if (GuiButton(fiftyFiftyButtonBounds, "50/50", fiftyFiftyColor, RAYWHITE)) {
@@ -350,7 +330,7 @@ void UpdatePlayingGraphicalScreen(void) {
                 }
             }
 
-            // Lógica para o botão "Excluir Questão" (permanece)
+            // Lógica para o botão "Excluir Questão"
             Rectangle excludeButtonBounds = { hintX_Middle, hintStartY, hintButtonWidth, hintButtonHeight };
             Color excludeColor = (g_hint_exclude_used == 0) ? COLOR_HINT_AVAILABLE_PURPLE : COLOR_HINT_USED_PURPLE;
             if (GuiButton(excludeButtonBounds, "EXCLUIR", excludeColor, RAYWHITE)) {
@@ -367,7 +347,7 @@ void UpdatePlayingGraphicalScreen(void) {
                 }
             }
 
-            // Lógica para o botão "Pular Questão" (permanece)
+            // Lógica para o botão "Pular Questão"
             Rectangle skipButtonBounds = { hintX_Rightmost, hintStartY, hintButtonWidth, hintButtonHeight };
             Color skipColor = (g_hint_skip_used < 2) ? COLOR_HINT_AVAILABLE_PURPLE : COLOR_HINT_USED_PURPLE;
             if (GuiButton(skipButtonBounds, "PULAR", skipColor, RAYWHITE)) {
@@ -397,7 +377,7 @@ void UpdatePlayingGraphicalScreen(void) {
                         }
                     }
 
-                    if (!is_eliminated) { // Only check for collision if not eliminated by 50/50
+                    if (!is_eliminated) { //Só verifica colisão se não foi eliminada pelo 50/50
                         Rectangle optionBounds = {50, optionY + i * (optionHeight + optionPadding), screenWidth - 100, optionHeight};
                         if (CheckCollisionPointRec(mousePoint, optionBounds)) {
                             selected = current_question->alternativas[i].letra;
@@ -576,7 +556,7 @@ void DrawMainMenuScreen(void) {
     DrawText("MENU PRINCIPAL", screenWidth/2 - MeasureText("MENU PRINCIPAL", 40)/2, screenHeight/8, 40, MARVEL_GOLD);
     float buttonWidth = screenWidth * 0.7f;
     float buttonHeight = 60;
-    float startY = screenHeight / 3; // CORRIGIDO: Agora alinhado com UpdateMainMenuScreen
+    float startY = screenHeight / 3; //Agora alinhado com UpdateMainMenuScreen
     float padding = 20;
 
     // Desenha todos os botões (sem a lógica de clique, que está no Update)
@@ -611,7 +591,6 @@ void DrawDisplayQuestionsScreen(void) {
         Pergunta *currentQuestion = &g_perguntas[g_current_display_question_idx];
 
         DrawText(TextFormat("PERGUNTA %d (NIVEL: %d)", g_current_display_question_idx + 1, currentQuestion->nivel), 50, 50, 25, MARVEL_GOLD);
-        // Use a fonte global g_marvel_font se quiser um estilo consistente
         DrawTextEx(g_marvel_font, currentQuestion->enunciado, 
                                 (Vector2){50, 100}, 20, 2, RAYWHITE);
 
@@ -643,7 +622,7 @@ void DrawPlayingGraphicalScreen(void) {
     if (g_current_question_idx != -1) {
         Pergunta *current_question = &g_perguntas[g_current_question_idx];
 
-        // Desenhar Nível e Respostas Corretas (pode continuar com DrawText normal)
+        // Desenhar Nível e Respostas Corretas
         DrawText(TextFormat("NIVEL %d", g_current_level), 50, 20, 30, MARVEL_GOLD);
         DrawText(TextFormat("RESPOSTAS CORRETAS: %d", g_correct_answers_in_row), screenWidth - 300, 20, 20, MARVEL_LIGHTGRAY); 
         
@@ -669,7 +648,7 @@ void DrawPlayingGraphicalScreen(void) {
             }
 
             if (is_eliminated_by_fifty_fifty) {
-                optionColor = DARKGRAY; // Grey out eliminated options
+                optionColor = DARKGRAY; // Mostra em cinza as opções eliminadas
                 DrawRectangleRec(optionBounds, optionColor);
                 char eliminatedText[256];
                 snprintf(eliminatedText, sizeof(eliminatedText), "%c) ELIMINADA", current_question->alternativas[i].letra);
@@ -718,7 +697,7 @@ void DrawPlayingGraphicalScreen(void) {
         float hintX_Leftmost = hintX_Middle - hintButtonWidth - hintPadding; 
         float hintStartY = 50;
 
-        // Botão 50/50 (AJUSTADO PARA 3 USOS)
+        // Botão 50/50
         Rectangle fiftyFiftyButtonBounds = { hintX_Leftmost, hintStartY, hintButtonWidth, hintButtonHeight }; 
         Color fiftyFiftyColor = (g_hint_fifty_fifty_used < 3) ? COLOR_HINT_AVAILABLE_PURPLE : COLOR_HINT_USED_PURPLE; 
         GuiButton(fiftyFiftyButtonBounds, "50/50", fiftyFiftyColor, RAYWHITE);
