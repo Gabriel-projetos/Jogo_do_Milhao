@@ -7,6 +7,7 @@
 #include <string.h>     // Para strlen, strcpy, strncpy, memset
 #include <ctype.h>      // Para toupper
 #include <stdlib.h>     // Para rand (embora GetRandomValue da Raylib seja preferível)
+#include <time.h>       // Para srand e time
 
 // As variáveis globais (g_perguntas, currentScreen, etc.) são declaradas como 'extern' em telas_jogo.h.
 // Suas definições reais (onde elas são inicializadas) estão no main.c.
@@ -58,6 +59,42 @@ bool GuiButton(Rectangle bounds, const char *text, Color buttonColor, Color text
     return clicked;
 }
 
+// NOVO: Função auxiliar para aplicar a dica 50/50
+void ApplyFiftyFiftyHint(Pergunta *question) {
+    // Coleta as letras das alternativas incorretas
+    char incorrect_options[3]; // Max 3 incorrect options (A, B, C, D - 1 correct)
+    int incorrect_count = 0;
+    for (int i = 0; i < 4; i++) {
+        if (toupper(question->alternativas[i].letra) != toupper(question->correta)) {
+            incorrect_options[incorrect_count++] = question->alternativas[i].letra;
+        }
+    }
+
+    if (incorrect_count >= 2) {
+        // Inicializa o gerador de números aleatórios se ainda não foi
+        if (g_hint_fifty_fifty_used == 0) { // Only seed once per game session to avoid same random numbers
+            srand((unsigned int)time(NULL));
+        }
+        
+        // Seleciona duas alternativas incorretas aleatoriamente para eliminar
+        int idx1 = GetRandomValue(0, incorrect_count - 1);
+        char eliminated1 = incorrect_options[idx1];
+
+        int idx2;
+        do {
+            idx2 = GetRandomValue(0, incorrect_count - 1);
+        } while (idx2 == idx1); // Garante que a segunda opção seja diferente da primeira
+        char eliminated2 = incorrect_options[idx2];
+
+        g_fifty_fifty_eliminated_chars[0] = eliminated1;
+        g_fifty_fifty_eliminated_chars[1] = eliminated2;
+        printf("50/50 ativado! Eliminadas: %c e %c\n", eliminated1, eliminated2);
+    } else {
+        printf("Nao foi possivel aplicar 50/50, menos de 2 alternativas incorretas.\n");
+    }
+}
+
+
 void ResetGamePlayingState(void) {
     g_current_level = 1;
     g_correct_answers_in_row = 0;
@@ -71,7 +108,7 @@ void ResetGamePlayingState(void) {
     // RESETAR CONTADORES DE DICAS
     g_hint_exclude_used = 0;
     g_hint_skip_used = 0;
-    g_hint_fifty_fifty_used = 0;
+    g_hint_fifty_fifty_used = 0; // Reset this counter
     g_fifty_fifty_active = false; // Desativa a dica 50/50
     g_fifty_fifty_eliminated_chars[0] = 0; // Limpa caracteres eliminados
     g_fifty_fifty_eliminated_chars[1] = 0;
@@ -114,7 +151,7 @@ void LoadNextQuestion(void) {
         g_is_answer_correct = false;
         g_selected_answer_char = ' ';
         g_correct_answer_char = question->correta;
-        g_fifty_fifty_active = false;
+        g_fifty_fifty_active = false; // Reset 50/50 for new question
         g_fifty_fifty_eliminated_chars[0] = 0;
         g_fifty_fifty_eliminated_chars[1] = 0;
     } else {
@@ -298,10 +335,21 @@ void UpdatePlayingGraphicalScreen(void) {
             float hintPadding = 10;
             float hintX_Rightmost = screenWidth - hintButtonWidth - 20;
             float hintX_Middle = hintX_Rightmost - hintButtonWidth - hintPadding;
-            // float hintX_Leftmost = hintX_Middle - hintButtonWidth - hintPadding; // REMOVIDO: unused variable
+            float hintX_Leftmost = hintX_Middle - hintButtonWidth - hintPadding; 
             float hintStartY = 50;
 
-            // Lógica para a dica 50/50 (permanece)
+            // Lógica para a dica 50/50 (AJUSTADO PARA 3 USOS)
+            Rectangle fiftyFiftyButtonBounds = { hintX_Leftmost, hintStartY, hintButtonWidth, hintButtonHeight };
+            Color fiftyFiftyColor = (g_hint_fifty_fifty_used < 3) ? COLOR_HINT_AVAILABLE_PURPLE : COLOR_HINT_USED_PURPLE;
+            if (GuiButton(fiftyFiftyButtonBounds, "50/50", fiftyFiftyColor, RAYWHITE)) {
+                if (g_hint_fifty_fifty_used < 3) {
+                    ++g_hint_fifty_fifty_used; // Incrementa o contador de uso
+                    g_fifty_fifty_active = true;
+                    ApplyFiftyFiftyHint(current_question); // Chama a função para aplicar a dica
+                    PlaySound(g_sound_snap); // Som de clique da dica
+                }
+            }
+
             // Lógica para o botão "Excluir Questão" (permanece)
             Rectangle excludeButtonBounds = { hintX_Middle, hintStartY, hintButtonWidth, hintButtonHeight };
             Color excludeColor = (g_hint_exclude_used == 0) ? COLOR_HINT_AVAILABLE_PURPLE : COLOR_HINT_USED_PURPLE;
@@ -311,7 +359,7 @@ void UpdatePlayingGraphicalScreen(void) {
                     for (int i = 0; i < 4; i++) {
                         if (toupper(current_question->alternativas[i].letra) != toupper(current_question->correta) &&
                             current_question->alternativas[i].removida == 0) {
-                            current_question->alternativas[i].removida = 1;
+                            current_question->alternativas[i].removida = 1; // This 'removida' flag is not used for 50/50, only for "excluir" hint.
                             break;
                         }
                     }
@@ -349,7 +397,7 @@ void UpdatePlayingGraphicalScreen(void) {
                         }
                     }
 
-                    if (!is_eliminated) {
+                    if (!is_eliminated) { // Only check for collision if not eliminated by 50/50
                         Rectangle optionBounds = {50, optionY + i * (optionHeight + optionPadding), screenWidth - 100, optionHeight};
                         if (CheckCollisionPointRec(mousePoint, optionBounds)) {
                             selected = current_question->alternativas[i].letra;
@@ -424,6 +472,7 @@ void UpdateDeleteQuestionScreen(void) {
 void UpdateEndingScreen(void) {
     framesCounter++; // Usa para o cursor piscando
 
+    const int screenHeight = GetScreenHeight(); // screenWidth removido
     switch (g_game_ending_state) {
         case ENDING_SHOW_SCORE: {
             if (IsKeyPressed(KEY_ENTER)) {
@@ -564,7 +613,7 @@ void DrawDisplayQuestionsScreen(void) {
         DrawText(TextFormat("PERGUNTA %d (NIVEL: %d)", g_current_display_question_idx + 1, currentQuestion->nivel), 50, 50, 25, MARVEL_GOLD);
         // Use a fonte global g_marvel_font se quiser um estilo consistente
         DrawTextEx(g_marvel_font, currentQuestion->enunciado, 
-                           (Vector2){50, 100}, 20, 2, RAYWHITE);
+                                (Vector2){50, 100}, 20, 2, RAYWHITE);
 
         float altStartY = 350;
         for (int i = 0; i < 4; i++) {
@@ -579,7 +628,7 @@ void DrawDisplayQuestionsScreen(void) {
         }
 
         DrawText("Pressione ESPACO para a proxima pergunta, ESC para voltar ao menu.", 
-                             50, screenHeight - 40, 15, MARVEL_LIGHTGRAY);
+                                 50, screenHeight - 40, 15, MARVEL_LIGHTGRAY);
 
     } else {
         DrawText("Nenhuma pergunta para exibir. Volte ao menu.", screenWidth/2 - MeasureText("Nenhuma pergunta para exibir. Volho ao menu.", 20)/2, screenHeight/2, 20, RAYWHITE);
@@ -600,7 +649,7 @@ void DrawPlayingGraphicalScreen(void) {
         
         // Desenhar Enunciado da Pergunta com fonte personalizada
         DrawTextEx(g_marvel_font, current_question->enunciado,
-                           (Vector2){50, 100}, 20, 2, RAYWHITE);
+                                (Vector2){50, 100}, 20, 2, RAYWHITE);
 
         // Desenhar Alternativas com fonte personalizada
         float optionY = 250;
@@ -620,12 +669,13 @@ void DrawPlayingGraphicalScreen(void) {
             }
 
             if (is_eliminated_by_fifty_fifty) {
-                optionColor = DARKGRAY;
+                optionColor = DARKGRAY; // Grey out eliminated options
                 DrawRectangleRec(optionBounds, optionColor);
-                // Não desenha "X" se não for pra ter a manopla
-                // DrawTextEx(g_marvel_font, "X", 
-                //          (Vector2){optionBounds.x + optionBounds.width / 2 - 10, optionBounds.y + optionHeight / 2 - 10}, 
-                //          20, 2, RAYWHITE);
+                char eliminatedText[256];
+                snprintf(eliminatedText, sizeof(eliminatedText), "%c) ELIMINADA", current_question->alternativas[i].letra);
+                DrawTextEx(g_marvel_font, eliminatedText,
+                                         (Vector2){optionBounds.x + 15, optionBounds.y + optionHeight / 2 - 10},
+                                         20, 2, RAYWHITE);
             } else {
                 if (g_game_play_state == SHOWING_FEEDBACK) { 
                     if (toupper(current_question->alternativas[i].letra) == toupper(g_selected_answer_char)) {
@@ -641,8 +691,8 @@ void DrawPlayingGraphicalScreen(void) {
                 snprintf(textoAlternativa, sizeof(textoAlternativa), "%c) %s", current_question->alternativas[i].letra, current_question->alternativas[i].texto);
 
                 DrawTextEx(g_marvel_font, textoAlternativa,
-                                   (Vector2){optionBounds.x + 15, optionBounds.y + optionHeight / 2 - 10},
-                                   20, 2, RAYWHITE);
+                                         (Vector2){optionBounds.x + 15, optionBounds.y + optionHeight / 2 - 10},
+                                         20, 2, RAYWHITE);
             }
         }
 
@@ -650,12 +700,12 @@ void DrawPlayingGraphicalScreen(void) {
         if (g_game_play_state == SHOWING_FEEDBACK) { 
             if (g_is_answer_correct) {
                 DrawTextEx(g_marvel_font, "CORRETO!", 
-                                   (Vector2){screenWidth/2 - MeasureTextEx(g_marvel_font, "CORRETO!", 50, 2).x / 2, screenHeight - 100}, 
-                                   50, 2, COLOR_CORRETO);
+                                         (Vector2){screenWidth/2 - MeasureTextEx(g_marvel_font, "CORRETO!", 50, 2).x / 2, screenHeight - 100}, 
+                                         50, 2, COLOR_CORRETO);
             } else {
                 DrawTextEx(g_marvel_font, "ERRADO!", 
-                                   (Vector2){screenWidth/2 - MeasureTextEx(g_marvel_font, "ERRADO!", 50, 2).x / 2, screenHeight - 100}, 
-                                   50, 2, COLOR_ERRADO);
+                                         (Vector2){screenWidth/2 - MeasureTextEx(g_marvel_font, "ERRADO!", 50, 2).x / 2, screenHeight - 100}, 
+                                         50, 2, COLOR_ERRADO);
             }
         }
 
@@ -665,12 +715,12 @@ void DrawPlayingGraphicalScreen(void) {
         float hintPadding = 10;
         float hintX_Rightmost = screenWidth - hintButtonWidth - 20;
         float hintX_Middle = hintX_Rightmost - hintButtonWidth - hintPadding;
-        // float hintX_Leftmost = hintX_Middle - hintButtonWidth - hintPadding; // REMOVIDO: unused variable
+        float hintX_Leftmost = hintX_Middle - hintButtonWidth - hintPadding; 
         float hintStartY = 50;
 
-        // Botão 50/50
-        Rectangle fiftyFiftyButtonBounds = { hintX_Middle - hintButtonWidth - hintPadding, hintStartY, hintButtonWidth, hintButtonHeight }; // Usa o espaço do hintX_Leftmost
-        Color fiftyFiftyColor = (g_hint_fifty_fifty_used == 0) ? COLOR_HINT_AVAILABLE_PURPLE : COLOR_HINT_USED_PURPLE; // Usando PURPLE como fallback
+        // Botão 50/50 (AJUSTADO PARA 3 USOS)
+        Rectangle fiftyFiftyButtonBounds = { hintX_Leftmost, hintStartY, hintButtonWidth, hintButtonHeight }; 
+        Color fiftyFiftyColor = (g_hint_fifty_fifty_used < 3) ? COLOR_HINT_AVAILABLE_PURPLE : COLOR_HINT_USED_PURPLE; 
         GuiButton(fiftyFiftyButtonBounds, "50/50", fiftyFiftyColor, RAYWHITE);
 
         // Botão "Excluir"
@@ -753,9 +803,9 @@ void DrawEndingScreen(void) {
             }
 
             DrawText(TextFormat("Caracteres: %d/%d", g_player_name_chars_count, MAX_LENGTH - 1), 
-                             GetScreenWidth() / 2 - 150, 250, 15, GRAY);
+                                 GetScreenWidth() / 2 - 150, 250, 15, GRAY);
             DrawText("Pressione ENTER para confirmar.", 
-                             GetScreenWidth() / 2 - MeasureText("Pressione ENTER para confirmar.", 20) / 2, screenHeight - 50, 20, GRAY);
+                                 GetScreenWidth() / 2 - MeasureText("Pressione ENTER para confirmar.", 20) / 2, screenHeight - 50, 20, GRAY);
 
         } break;
         case ENDING_SHOW_RANKING: {
@@ -767,14 +817,14 @@ void DrawEndingScreen(void) {
             for (int i = 0; i < LEADER_SIZE; i++) {
                 if (g_ranking_board != NULL && g_ranking_board[i].score != -1) { // Só desenha entradas válidas, verifica se g_ranking_board não é nulo
                     DrawText(TextFormat("%d. %s - %d pontos", i + 1, g_ranking_board[i].name, g_ranking_board[i].score), 
-                                     GetScreenWidth() / 2 - 200, startY + i * 30, 25, RAYWHITE);
+                                         GetScreenWidth() / 2 - 200, startY + i * 30, 25, RAYWHITE);
                 } else {
                     DrawText(TextFormat("%d. --- Vazio ---", i + 1), 
-                                     GetScreenWidth() / 2 - 200, startY + i * 30, 25, GRAY);
+                                         GetScreenWidth() / 2 - 200, startY + i * 30, 25, GRAY);
                 }
             }
             DrawText("Pressione ENTER para voltar ao Menu Principal.", 
-                             GetScreenWidth() / 2 - MeasureText("Pressione ENTER para voltar ao Menu Principal.", 20) / 2, screenHeight - 50, 20, GRAY);
+                                 GetScreenWidth() / 2 - MeasureText("Pressione ENTER para voltar ao Menu Principal.", 20) / 2, screenHeight - 50, 20, GRAY);
 
         } break;
     }
@@ -814,10 +864,10 @@ void DrawRankingScreen(void) {
     for (int i = 0; i < LEADER_SIZE; i++) {
         if (g_ranking_board != NULL && g_ranking_board[i].score != -1) { // Só desenha entradas válidas, verifica se g_ranking_board não é nulo
             DrawText(TextFormat("%d. %s - %d pontos", i + 1, g_ranking_board[i].name, g_ranking_board[i].score), 
-                             GetScreenWidth() / 2 - 200, startY + i * 30, 25, RAYWHITE);
+                                 GetScreenWidth() / 2 - 200, startY + i * 30, 25, RAYWHITE);
         } else {
             DrawText(TextFormat("%d. --- Vazio ---", i + 1), 
-                             GetScreenWidth() / 2 - 200, startY + i * 30, 25, GRAY);
+                                 GetScreenWidth() / 2 - 200, startY + i * 30, 25, GRAY);
         }
     }
     DrawText("Pressione ENTER ou ESC para voltar ao Menu Principal.", 
